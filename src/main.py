@@ -6,14 +6,18 @@ import pathlib
 import os
 import argparse
 import functools
-from datetime import datetime
+from datetime import datetime, timezone
 from collections.abc import Callable
 
 # 3rd party packages
+import pandas as pd
 import nfl_data_py as nfl
+from sqlalchemy import create_engine, text
 
 # Import src modules
 import utility
+import db
+import nfl_mapping
 
 # Setup logger for script
 logger = logging.getLogger(__name__)
@@ -28,9 +32,44 @@ def main(args: argparse.Namespace) -> None:
     )
 
     # ETL date to add when loading files
-    now = datetime.now()
-    now_suffix = now.strftime("%Y%m%d%H%M%S")
-    logger.info("Suffix for _date_loaded: %s", now_suffix)
+    now = datetime.now(tz=timezone.utc)
+
+    # Create db connection
+    url = utility.create_db_url(
+        host=args.env_host,
+        port=args.env_port,
+        db=args.env_db,
+        user=args.env_user,
+        pwd=args.env_pwd,
+        ssl=args.env_ssl,
+    )
+    print(url)
+
+    utility.test_db_engine(url)
+
+    # Nfl data
+    engine = create_engine(url, pool_pre_ping=True)
+    logger.info("Engine is: %s", engine)
+
+    for data_key, config in nfl_mapping.DATA_TABLE_MAP.items():
+        if data_key == "pbp_data":
+            partial_func = functools.partial(
+                config["fetch_func"], downcast=config["downcast_type"]
+            )
+
+            years = list(range(args.years_beg, args.years_end))
+
+            for year in years:
+                db.append_to_table(
+                    nfl_function=partial_func,
+                    engine_info=engine,
+                    date_loaded=now,
+                    table_name=config["table_name"],
+                    schema_name=args.schema,
+                    column_rename=config["rename_column"],
+                    year=year,
+                )
+                print(year)
 
 
 if __name__ == "__main__":
@@ -48,6 +87,56 @@ if __name__ == "__main__":
         type=str,
         default="debug.log",
         help="What the log file should be named",
+    )
+    parser.add_argument(
+        "--env_host",
+        default="AJ_HOST",
+        help="Host for connection, set in .profile, .zprofile or local",
+    )
+    parser.add_argument(
+        "--env_port",
+        default="AJ_PORT",
+        help="Port for connection, set in .profile, .zprofile or local",
+    )
+    parser.add_argument(
+        "--env_db",
+        default="AJ_DB_NFL",
+        help="DB for connection, set in .profile, .zprofile or local",
+    )
+    parser.add_argument(
+        "--env_user",
+        default="AJ_USER",
+        help="User for connection, set in .profile, .zprofile or local",
+    )
+    parser.add_argument(
+        "--env_pwd",
+        default="AJ_PWD",
+        help="Password for connection, set in .profile, .zprofile or local",
+    )
+    parser.add_argument(
+        "--env_ssl",
+        default="AJ_SSL",
+        help="SSL for connection, set in .profile, .zprofile or local",
+    )
+    parser.add_argument(
+        "--years_beg",
+        default=2016,
+        help="First year to pull player data",
+    )
+    parser.add_argument(
+        "--years_end",
+        default=2024,
+        help="Ending year to pull player data",
+    )
+    parser.add_argument(
+        "--schema",
+        default="lake",
+        help="Schema name for table",
+    )
+    parser.add_argument(
+        "--table_pbp",
+        default="pbp",
+        help="Table name for play by play data",
     )
     args = parser.parse_args()
 

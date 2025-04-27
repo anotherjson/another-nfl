@@ -2,6 +2,9 @@
 
 import logging
 import pathlib
+import os
+
+from sqlalchemy import create_engine, text
 
 logger = logging.getLogger(__name__)
 
@@ -19,3 +22,40 @@ def create_log_file(
     dir_path.mkdir(exist_ok=True)
     logging.basicConfig(filename=file_path, encoding=encoding_type, level=logging.DEBUG)
     logger.info("Log file path is: %s", file_path)
+
+
+def create_db_url(host: str, port: str, db: str, user: str, pwd: str, ssl: str):
+    # Create db connection
+    db_host = os.getenv(host)
+    db_port = os.getenv(port)
+    db_db = os.getenv(db)
+    db_user = os.getenv(user)
+    db_pwd = os.getenv(pwd)
+    db_ssl = os.getenv(ssl)
+
+    # Validate that variables are loaded
+    if not all([host, port, db, user, pwd, ssl]):
+        raise ValueError("One r more database environment variables are not set.")
+
+    # Create url
+    db_url = f"postgresql+psycopg2://{db_user}:{db_pwd}@{db_host}:{db_port}/{db_db}?sslmode={db_ssl}"
+    db_url_log = f"postgresql+psycopg2://{db_user}:***@{db_host}:{db_port}/{db_db}?sslmode={db_ssl}"
+    logger.info("Created db connection url as: %s", db_url_log)
+
+    return db_url
+
+
+def test_db_engine(url: str) -> None:
+    try:
+        engine = create_engine(url, echo=False)
+
+        with engine.connect() as connection:
+            result = connection.execute(text("SELECT version();"))
+            db_version = result.scalar()
+            logger.info("Successfully connected to PostgreSQL! Version: %s", db_version)
+
+        engine.dispose()
+
+    except Exception as e:
+        logger.error("Error connecting to the database: %s", e)
+        raise
