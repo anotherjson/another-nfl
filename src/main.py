@@ -47,48 +47,67 @@ def main(args: argparse.Namespace) -> None:
         ssl=args.env_ssl,
     )
 
-    # Setting up variables that are constaint for reuse
+    # Setting up variables and functions for reuse in loop
     engine, inspector = utility.make_engine_inspector(url, utility.test_db_engine)
 
     schema_name = args.schema
     schema_staging = f"{schema_name}_staging"
     years = list(range(args.years_beg, args.years_end))
 
+    partial_write_table = functools.partial(
+        db.write_to_table,
+        connection_engine=engine,
+        name_schema=schema_staging,
+        exist_behavour="replace",
+    )
+
+    partial_find_table = functools.partial(db.find_table_columns, inspector=inspector)
+
+    partial_exists_table = functools.partial(
+        db.does_table_exists, inspector=inspector, name_schema=schema_name
+    )
+
+    partial_find_new = functools.partial(
+        db.find_new_columns,
+        func_find_table=partial_find_table,
+        name_schema_existing=schema_name,
+        name_schema_staging=schema_staging,
+    )
+
     for data_key, config in nfl_mapping.DATA_TABLE_MAP.items():
         if data_key == "pbp_data":
             table_name = config["table_name"]
 
             if isinstance(config["downcast_type"], bool):
-                partial_func = functools.partial(
+                partial_func_nfl = functools.partial(
                     config["fetch_func"], downcast=config["downcast_type"]
                 )
             else:
-                partial_func = config["fetch_func"]
+                partial_func_nfl = config["fetch_func"]
 
             if config["year_accepted"]:
                 for year in years:
                     logger.info("Starting year: %s", year)
                     print(f"Starting {year}")
 
-                    if db.does_table_exist(
-                        inspector=inspector,
-                        table_name=table_name,
-                        schema_name=schema_name,
-                    ):
-                        existing_columns = db.find_table_columns(
-                            inspector=inspector,
-                            table_name=table_name,
-                            schema_name=schema_name,
+                    partial_func_nfl = functools.partial(partial_func_nfl, years=[year])
+
+                    if partial_exists_table(name_table=table_name):
+                        existing_columns_types = partial_find_table(
+                            name_table=table_name, name_schema=schema_name
                         )
-                        imported_data = partial_import_data(
-                            nfl_function=partial_func,
-                            year=year,
+                        # imported_data = partial_import_data(
+                        #     nfl_function=partial_func_nfl,
+                        #     year=year,
+                        # )
+                        # partial_write_table(
+                        #     dataframe=imported_data, name_table=table_name
+                        # )
+                        new_columns = partial_find_new(
+                            name_table_existing=table_name,
+                            name_table_staging=table_name,
                         )
-                        imported_data.partial_to_sql(
-                            name=config["table_name"],
-                            con=engine,
-                            schema=schema_staging,
-                        )
+                        print(new_columns)
 
                     break
 
