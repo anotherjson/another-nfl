@@ -3,8 +3,10 @@
 import logging
 import pathlib
 import os
+from collections.abc import Callable
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, inspect
+from sqlalchemy.engine import Engine, Inspector
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +27,7 @@ def create_log_file(
 
 
 def create_db_url(host: str, port: str, db: str, user: str, pwd: str, ssl: str):
+    """[TODO:write docstring]"""
     # Create db connection
     db_host = os.getenv(host)
     db_port = os.getenv(port)
@@ -45,17 +48,26 @@ def create_db_url(host: str, port: str, db: str, user: str, pwd: str, ssl: str):
     return db_url
 
 
-def test_db_engine(url: str) -> None:
+def test_db_engine(engine: Engine) -> None:
+    """[TODO:write docstring]"""
     try:
-        engine = create_engine(url, echo=False)
-
         with engine.connect() as connection:
             result = connection.execute(text("SELECT version();"))
             db_version = result.scalar()
             logger.info("Successfully connected to PostgreSQL! Version: %s", db_version)
 
-        engine.dispose()
-
     except Exception as e:
         logger.error("Error connecting to the database: %s", e)
         raise
+
+
+def make_engine_inspector(url: str, testing_func: Callable) -> [Engine, Inspector]:
+    """[TODO:write docstring]"""
+    engine = create_engine(url, pool_pre_ping=True)
+    logger.info("Engine is: %s", engine)
+    testing_func(engine)
+
+    inspector = inspect(engine)
+    logger.info("inspector is: %s", inspector)
+
+    return engine, inspector

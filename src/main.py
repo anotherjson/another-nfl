@@ -12,7 +12,9 @@ from collections.abc import Callable
 # 3rd party packages
 import pandas as pd
 import nfl_data_py as nfl
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, inspect
+from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.engine import Engine
 
 # Import src modules
 import utility
@@ -33,6 +35,7 @@ def main(args: argparse.Namespace) -> None:
 
     # ETL date to add when loading files
     now = datetime.now(tz=timezone.utc)
+    partial_import_data = functools.partial(db.import_data, date_loaded=now)
 
     # Create db connection
     url = utility.create_db_url(
@@ -43,33 +46,51 @@ def main(args: argparse.Namespace) -> None:
         pwd=args.env_pwd,
         ssl=args.env_ssl,
     )
-    print(url)
 
-    utility.test_db_engine(url)
+    # Setting up variables that are constaint for reuse
+    engine, inspector = utility.make_engine_inspector(url, utility.test_db_engine)
 
-    # Nfl data
-    engine = create_engine(url, pool_pre_ping=True)
-    logger.info("Engine is: %s", engine)
+    schema_name = args.schema
+    schema_staging = f"{schema_name}_staging"
+    years = list(range(args.years_beg, args.years_end))
 
     for data_key, config in nfl_mapping.DATA_TABLE_MAP.items():
         if data_key == "pbp_data":
-            partial_func = functools.partial(
-                config["fetch_func"], downcast=config["downcast_type"]
-            )
+            table_name = config["table_name"]
 
-            years = list(range(args.years_beg, args.years_end))
-
-            for year in years:
-                db.append_to_table(
-                    nfl_function=partial_func,
-                    engine_info=engine,
-                    date_loaded=now,
-                    table_name=config["table_name"],
-                    schema_name=args.schema,
-                    column_rename=config["rename_column"],
-                    year=year,
+            if isinstance(config["downcast_type"], bool):
+                partial_func = functools.partial(
+                    config["fetch_func"], downcast=config["downcast_type"]
                 )
-                print(year)
+            else:
+                partial_func = config["fetch_func"]
+
+            if config["year_accepted"]:
+                for year in years:
+                    logger.info("Starting year: %s", year)
+                    print(f"Starting {year}")
+
+                    if db.does_table_exist(
+                        inspector=inspector,
+                        table_name=table_name,
+                        schema_name=schema_name,
+                    ):
+                        existing_columns = db.find_table_columns(
+                            inspector=inspector,
+                            table_name=table_name,
+                            schema_name=schema_name,
+                        )
+                        imported_data = partial_import_data(
+                            nfl_function=partial_func,
+                            year=year,
+                        )
+                        imported_data.partial_to_sql(
+                            name=config["table_name"],
+                            con=engine,
+                            schema=schema_staging,
+                        )
+
+                    break
 
 
 if __name__ == "__main__":
