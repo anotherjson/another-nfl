@@ -14,15 +14,6 @@ from sqlalchemy.engine import Engine, Inspector
 logger = logging.getLogger(__name__)
 
 
-def does_table_exists(inspector: Inspector, name_table: str, name_schema: str) -> bool:
-    """[TODO:description]"""
-    if_exists = inspector.has_table(table_name=name_table, schema=name_schema)
-    if if_exists:
-        logging.debug("Table missing: %s.%s", name_schema, name_table)
-
-    return if_exists
-
-
 def find_table_columns(
     inspector: Inspector,
     name_table: str,
@@ -78,24 +69,27 @@ def write_to_table(
 
 def find_new_columns(
     func_find_table: Callable,
-    name_table_existing: str,
-    name_table_staging: str,
+    connection_engine: Engine,
+    name_table: str,
     name_schema_existing: str,
     name_schema_staging: str,
 ) -> dict:
     """[TODO:description]"""
     existing_columns = func_find_table(
-        name_table=name_table_existing, name_schema=name_schema_existing
+        name_table=name_table, name_schema=name_schema_existing
     )
     staging_columns = func_find_table(
-        name_table=name_table_staging, name_schema=name_schema_staging
+        name_table=name_table, name_schema=name_schema_staging
     )
     new_columns = set(staging_columns.keys()) - set(existing_columns.keys())
-    new_column_types = {col: staging_columns[col] for col in new_columns}
+    new_column_types = {
+        col: staging_columns[col].compile(dialect=connection_engine.dialect)
+        for col in new_columns
+    }
 
     logger.debug("New columns found: %s", new_column_types)
 
-    return new_column_types
+    return staging_columns, new_column_types
 
 
 def alter_schema(
@@ -110,9 +104,75 @@ def alter_schema(
             logging.debug("Connection is: %s", connection)
             for col in new_columns_types:
                 quoted_col = f'"{col}"'
-                col_type = new_columns_types["col"]
+                col_type = new_columns_types[col]
+
                 alter_sql = text(
-                    f'ALTER TABLE "{name_schema}"."{name_table}" ADD COLUMN {quoted_col} {col_type} NULL;'
+                    f"""
+                    ALTER TABLE "{name_schema}"."{name_table}"
+                    ADD COLUMN {quoted_col} {col_type} NULL;
+                """
                 )
                 logging.debug("Alter sql is: %s", alter_sql)
                 connection.execute(alter_sql)
+
+
+def merge_staging(
+    connection_engine: Engine,
+    name_table: str,
+    name_schema_existing: str,
+    name_schema_staging: str,
+    columns_staging: dict,
+) -> None:
+    """[TODO:description]"""
+    with connection_engine.connect() as connection:
+        with connection.begin():
+            logging.debug("Connection is: %s", connection)
+            qouted_columns_staging = [f'"{col}"' for col in columns_staging]
+            insert_sql = text(
+                f"""
+                INSERT INTO "{name_schema_existing}"."{name_table}"
+                ({", ".join(qouted_columns_staging)})
+                SELECT {", ".join(qouted_columns_staging)}
+                FROM "{name_schema_staging}"."{name_table}";
+            """
+            )
+            logging.debug("Insert sql is: %s", insert_sql)
+            connection.execute(insert_sql)
+
+
+def write_imported(
+    import_func: Callable,
+    nfl_func: Callable,
+    write_func: Callable,
+    name_table: str,
+    name_schema: str,
+) -> None:
+    """[TODO:description]"""
+    imported_data = import_func(nfl_function=nfl_func)
+
+    write_func(dataframe=imported_data, name_table=name_table, name_schema=name_schema)
+
+
+def insert_from_staging(
+    func_find_new: Callable,
+    func_find_table: Callable,
+    func_alter_schema: Callable,
+    func_merge_staging: Callable,
+    name_table: str,
+) -> None:
+    """[TODO:description]"""
+    staging_columns, new_columns = func_find_new(
+        func_find_table=func_find_table,
+        name_table=name_table,
+    )
+
+    if not len(new_columns) == 0:
+        func_alter_schema(
+            new_columns_types=new_columns,
+            name_table=name_table,
+        )
+
+    func_merge_staging(
+        name_table=name_table,
+        columns_staging=staging_columns,
+    )

@@ -23,7 +23,7 @@ def create_log_file(
 
     dir_path.mkdir(exist_ok=True)
     logging.basicConfig(filename=file_path, encoding=encoding_type, level=logging.DEBUG)
-    logger.info("Log file path is: %s", file_path)
+    logger.debug("Log file path is: %s", file_path)
 
 
 def create_db_url(host: str, port: str, db: str, user: str, pwd: str, ssl: str):
@@ -43,7 +43,7 @@ def create_db_url(host: str, port: str, db: str, user: str, pwd: str, ssl: str):
     # Create url
     db_url = f"postgresql+psycopg2://{db_user}:{db_pwd}@{db_host}:{db_port}/{db_db}?sslmode={db_ssl}"
     db_url_log = f"postgresql+psycopg2://{db_user}:***@{db_host}:{db_port}/{db_db}?sslmode={db_ssl}"
-    logger.info("Created db connection url as: %s", db_url_log)
+    logger.debug("Created db connection url as: %s", db_url_log)
 
     return db_url
 
@@ -54,20 +54,30 @@ def test_db_engine(engine: Engine) -> None:
         with engine.connect() as connection:
             result = connection.execute(text("SELECT version();"))
             db_version = result.scalar()
-            logger.info("Successfully connected to PostgreSQL! Version: %s", db_version)
+            logger.debug(
+                "Successfully connected to PostgreSQL! Version: %s", db_version
+            )
+
+        return True
 
     except Exception as e:
         logger.error("Error connecting to the database: %s", e)
-        raise
+        return False
 
 
-def make_engine_inspector(url: str, testing_func: Callable) -> [Engine, Inspector]:
+def make_engine(url: str, testing_func: Callable) -> Engine:
     """[TODO:write docstring]"""
     engine = create_engine(url, pool_pre_ping=True)
-    logger.info("Engine is: %s", engine)
-    testing_func(engine)
+    logger.debug("Engine is: %s", engine)
+    engine_working = testing_func(engine)
+    logger.debug("Engine tested: %s", engine_working)
 
-    inspector = inspect(engine)
-    logger.info("inspector is: %s", inspector)
+    return engine
 
-    return engine, inspector
+
+def convert_to_int(arg_field: [str, int]) -> int:
+    """[TODO:write docstring]"""
+    if isinstance(arg_field, str):
+        return int(arg_field)
+
+    return arg_field
