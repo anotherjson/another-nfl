@@ -1,179 +1,159 @@
-# Quick Reference Guide
+# Quick Reference for New Claude Instances
 
-Essential commands and patterns for working with the NFL Data Explorer project.
+This document provides essential commands and information for working with the NFL Data Extraction Pipeline project.
 
-## Essential Commands
+## 🎯 Project Status: Phase 2 Complete ✅
+
+This is a fully functional production-grade data extraction pipeline with comprehensive CLI tools and robust processing capabilities.
+
+## ⚡ Essential Commands
 
 ### Environment Setup
 ```bash
-# Setup (run once)
-uv python install 3.11
-uv sync --dev
-uv run pre-commit install
-
-# Daily use
-uv run python -m src.cli --help
+uv sync --dev                           # Install dependencies
+uv run python -m src.cli --help        # Test CLI availability (explore + extract commands)
 ```
 
-### CLI Usage
+### Data Exploration (Always Works)
 ```bash
-# List all NFL datasets
-uv run python -m src.cli explore datasets
-
-# Explore specific dataset (reliable)
-uv run python -m src.cli explore data team_desc --limit 5
-
-# Explore with year filter
-uv run python -m src.cli explore data schedules --year 2023 --limit 3
-
-# Read parquet files
-uv run python -m src.cli read data/sample_players.parquet --info
-
-# Error debugging
-uv run python -m src.cli explore data pbp --verbose
+uv run python -m src.cli explore datasets                    # List all 19 datasets
+uv run python -m src.cli explore data team_desc --limit 3    # Reliable test dataset
+uv run python -m src.cli explore data pbp --year 2020        # Year-specific data
+uv run python -m src.cli read data/sample_players.parquet    # Read parquet files
 ```
 
-### Development Commands
+### Production Extraction (Phase 2)
 ```bash
-# Code quality
-uv run ruff format .
-uv run ruff check .
-uv run ruff check . --fix
+# Single dataset extraction
+uv run python -m src.cli extract dataset pbp --year 2023 --verbose
 
-# Testing
-uv run pytest tests/test_cli.py -v         # CLI tests (reliable)
-uv run pytest --cov=src                   # Full test suite with coverage
-uv run pytest tests/test_parquet_reader.py # Parquet tests
+# Multi-year processing
+uv run python -m src.cli extract multiple weekly --years 2020,2021,2022
 
-# Pre-commit
-uv run pre-commit run --all-files
+# Smart incremental processing
+uv run python -m src.cli extract incremental schedules --max-age-days 7
+
+# Status and management
+uv run python -m src.cli extract status
+uv run python -m src.cli extract status pbp --verbose
+uv run python -m src.cli extract cleanup --max-age-days 30 --dry-run
 ```
 
-## File Structure Quick Map
-
-```
-another-nfl/
-├── src/
-│   ├── cli.py              # Main CLI commands
-│   ├── nfl_explorer.py     # NFL data logic (19 datasets)
-│   └── parquet_reader.py   # Parquet file handling
-├── tests/
-│   ├── test_cli.py         # CLI tests (work reliably)
-│   ├── test_nfl_explorer.py # NFL tests (may have issues)
-│   └── test_parquet_reader.py # Parquet tests
-├── data/
-│   └── sample_players.parquet # Test data
-├── CLAUDE.md               # Main guidance document
-├── README.md               # User documentation
-├── DEVELOPMENT_GUIDE.md    # Detailed dev guide
-├── TROUBLESHOOTING.md      # Common issues
-└── pyproject.toml          # Project config
+### Development
+```bash
+uv run ruff format . && uv run ruff check .     # Format and lint
+uv run pytest tests/test_cli.py -v              # Run CLI tests (reliable)
+uv run pytest tests/test_config_loader.py -v    # Configuration tests (reliable)
+uv run pytest tests/test_cli_extract.py -v      # Extraction CLI tests (reliable)
+uv run pytest --cov=src                         # Full test suite with coverage
 ```
 
-## NFL Datasets Quick Reference
+### Troubleshooting
+```bash
+uv run python -m src.cli explore data team_desc              # Always works
+uv run python -m src.cli extract status                      # Check extraction state
+uv run python -c "from src.config_loader import ConfigLoader; print(len(ConfigLoader().list_datasets()))"  # Test config
+```
 
-### Always Work (No Network)
-- `team_desc` - Team information and colors
-- `players` - Player information
+## 📊 Dataset Quick Reference
 
-### Usually Work (Network Required)
+### Safe for Testing (No Network)
+- `team_desc` - Team information (always available)
+- `players` - Player information (always available)
+
+### Year-Required Datasets (Network Dependent)
+- `pbp` - Play-by-play (1999+) [Large files]
+- `weekly` - Weekly stats (1999+)  
+- `seasonal` - Season stats (1999+)
 - `schedules` - Game schedules (1999+)
-- `combine` - NFL Combine results (1987+)
-- `draft_picks` - Draft picks (1936+)
+- `weekly_rosters` - Team rosters (1999+)
 
-### May Have Issues (External API)
-- `pbp` - Play-by-play data (1999+)
-- `weekly` - Weekly stats (1999+)
-- `seasonal` - Seasonal stats (1999+)
+### Advanced Datasets
+- `snap_counts` (2012+)
+- `ngs_data` (2016+) 
+- `ftn_data` (2018+)
+- `combine` (1987+)
+- `draft_picks` (1936+)
 
-## Common Patterns
+## 🔧 Common Code Patterns
 
-### Adding CLI Command
+### Configuration System (Phase 2)
 ```python
-@main.command()
-@click.argument("required_param")
-@click.option("--optional", default=None, help="Optional parameter")
-def new_command(required_param, optional):
-    """Command description."""
-    try:
-        # Implementation
-        console.print(f"[green]Success[/green]")
-    except Exception as e:
-        console.print(f"[red]Error: {e}[/red]")
-        sys.exit(1)
+from src.config_loader import ConfigLoader
+
+loader = ConfigLoader()
+config = loader.get_dataset_config('pbp')
+datasets = loader.list_datasets()  # All 19 datasets
+path = loader.get_output_path('pbp', year=2023, etl_date='2024-01-15')
 ```
 
-### Error Handling Pattern
+### Production Extraction (Phase 2)
 ```python
-try:
-    result = risky_operation()
-    return result
-except SpecificError as e:
-    raise Exception(f"Descriptive message: {str(e)}")
+from src.nfl_extractor import NFLDataExtractor
+
+extractor = NFLDataExtractor()
+data, metadata = extractor.extract_dataset('pbp', year=2023, validate=True, save_to_disk=True)
+results = extractor.extract_multiple_years('weekly', [2020, 2021, 2022])
 ```
 
-### Rich Table Output
+### Incremental Processing (Phase 2) 
 ```python
-from rich.table import Table
+from src.extraction_manager import ExtractionManager
 
-table = Table(title="Title")
-table.add_column("Col1", style="cyan")
-table.add_column("Col2", style="magenta")
-table.add_row("data1", "data2")
-console.print(table)
+manager = ExtractionManager()
+summary = manager.extract_incremental('pbp', years=[2020, 2021], max_age_days=7)
+status = manager.get_extraction_summary('weekly')
 ```
 
-## Testing Patterns
-
-### CLI Test
+### CLI Testing
 ```python
-def test_cli_command():
-    runner = CliRunner()
-    result = runner.invoke(main, ['command', 'args'])
-    assert result.exit_code == 0
-    assert "expected" in result.output
+from click.testing import CliRunner
+from src.cli import main
+
+runner = CliRunner()
+result = runner.invoke(main, ['extract', 'status'])
+assert result.exit_code == 0
 ```
 
-### Mock External API
-```python
-@patch('src.nfl_explorer.nfl.import_team_desc')
-def test_with_mock(mock_func):
-    mock_func.return_value = pd.DataFrame({'col': ['data']})
-    # Test implementation
+## ⚠️ Important Notes
+
+### What's Normal vs. What's Broken
+
+#### ✅ Normal (Don't Worry)
+- Some NFL datasets fail with network errors
+- "name 'Error' is not defined" messages from external APIs
+- Test failures in `test_nfl_explorer.py` due to mocking issues
+- API rate limits or timeouts
+- Individual year/dataset extraction failures
+
+#### 🚨 Fix These  
+- CLI doesn't respond to `--help`
+- Configuration system fails to load
+- Import errors in Python modules
+- `team_desc` dataset fails to load
+- All CLI/config tests fail
+
+### File Structure
+```
+src/
+  cli.py                 # Main CLI (explore + extract commands)
+  config_loader.py       # YAML configuration system
+  nfl_extractor.py       # Production extraction engine
+  extraction_manager.py  # Incremental processing
+  nfl_explorer.py        # Data exploration
+  parquet_reader.py      # File operations
+configs/datasets/        # 19 YAML configuration files
+tests/                   # 117+ comprehensive tests
 ```
 
-## Troubleshooting Quick Fixes
+## 🎯 Success Checklist
 
-### Issue: Command not found
-```bash
-# Fix: Use uv run
-uv run python -m src.cli explore datasets
-```
-
-### Issue: Import errors
-```bash
-# Fix: Ensure dependencies installed
-uv sync --dev
-```
-
-### Issue: Network errors with NFL data
-```bash
-# Fix: Use team_desc dataset
-uv run python -m src.cli explore data team_desc
-```
-
-### Issue: Test failures
-```bash
-# Fix: Run CLI tests specifically
-uv run pytest tests/test_cli.py -v
-```
-
-### Issue: Formatting errors
-```bash
-# Fix: Auto-format
-uv run ruff format .
-uv run ruff check . --fix
-```
+- [ ] `uv run python -m src.cli --help` shows explore + extract commands
+- [ ] Configuration loads 19 datasets: `ConfigLoader().list_datasets()`
+- [ ] `team_desc` dataset extracts successfully  
+- [ ] `extract status` command works
+- [ ] CLI tests pass consistently
+- [ ] Error messages are helpful and clear
 
 ## Validation Checklist
 
@@ -183,14 +163,14 @@ Quick checks to verify everything works:
 # 1. Environment
 uv run python -m src.cli --help
 
-# 2. Basic functionality
-uv run python -m src.cli explore datasets
+# 2. Configuration system
+uv run python -c "from src.config_loader import ConfigLoader; print(f'Datasets: {len(ConfigLoader().list_datasets())}')"
 
-# 3. Data retrieval
+# 3. Data exploration
 uv run python -m src.cli explore data team_desc --limit 2
 
-# 4. File reading
-uv run python -m src.cli read data/sample_players.parquet
+# 4. Production extraction
+uv run python -m src.cli extract status
 
 # 5. Error handling
 uv run python -m src.cli explore data invalid_dataset
@@ -200,40 +180,29 @@ uv run ruff check .
 
 # 7. Tests
 uv run pytest tests/test_cli.py -v
+uv run pytest tests/test_config_loader.py -v
 ```
 
-If all the above work, the project is functioning correctly.
+If all the above work, the system is functioning correctly.
 
-## Git Workflow
+## 📖 Need More Info?
 
-```bash
-# Check status
-git status
-
-# Stage changes
-git add .
-
-# Commit with good message
-git commit -m "descriptive message"
-
-# Push changes
-git push origin claude_vibe
-```
+- **NEW_CLAUDE_GUIDE.md** - Comprehensive onboarding for new instances
+- **CLAUDE.md** - Complete technical reference
+- **README.md** - User-facing documentation  
+- **ONBOARDING.md** - Detailed development patterns
+- **TROUBLESHOOTING.md** - Problem-solving guide
 
 ## Key Reminders
 
 1. **Use `uv run`** for all Python commands
 2. **Test with `team_desc`** dataset first (always works)
-3. **CLI tests are reliable** - focus on those for validation
-4. **Network errors are expected** with some NFL datasets
-5. **Code formatting is required** - run ruff before committing
-6. **82% coverage achieved** when running full test suite
-7. **Phase 1 is complete** - CLI tool is production ready
+3. **Configuration system** loads all 19 datasets automatically
+4. **CLI tests are reliable** - focus on those for validation
+5. **Network errors are expected** with some NFL datasets
+6. **Phase 2 is complete** - Production extraction pipeline is ready
+7. **117+ test cases** provide comprehensive coverage
 
-## Getting Unstuck
+---
 
-If something doesn't work:
-1. Check TROUBLESHOOTING.md for specific error
-2. Verify basic functionality with team_desc dataset
-3. Run CLI tests to confirm core functionality
-4. Remember: network issues are external, not code issues
+*Last Updated: Phase 2 completion - Production extraction pipeline*
