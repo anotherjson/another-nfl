@@ -8,18 +8,22 @@ This is an NFL data extraction and analysis project that builds a modern data pi
 
 ## Technology Stack
 
-### Currently Implemented (Phase 1 ✅ + Phase 2 Config System ✅)
+### Currently Implemented (Phase 1 ✅ + Phase 2 ✅)
 - **Python Environment**: Python 3.11 with `uv` for virtual environment and package management
 - **CLI Framework**: Click for command-line interface with Rich for formatted output
 - **Data Source**: `nfl_data_py` Python package (19 NFL datasets supported)
 - **Data Analysis**: pandas for data manipulation, pyarrow for Parquet file handling
 - **Code Quality**: Ruff for formatting and linting with pre-commit hooks
-- **Testing**: pytest with coverage reporting (97% coverage achieved)
+- **Testing**: pytest with coverage reporting (comprehensive test suite)
 - **Documentation**: Comprehensive README and usage examples
 - **Configuration System**: YAML-based configuration for all 19 NFL datasets with validation
 - **Configuration Management**: PyYAML integration with comprehensive config loader
+- **Production Extraction**: NFLDataExtractor with retry logic, validation, and error handling
+- **Data Partitioning**: Year-based and ETL-date partitioning with configurable paths
+- **Incremental Processing**: ExtractionManager with state tracking and incremental updates
+- **Data Validation**: Comprehensive validation with required column checks and size estimates
 
-### In Progress (Phase 2 Data Extraction)
+### Future Implementation (Phase 3+)
 - **Data Storage**: Parquet files partitioned by ETL date
 - **Data Lake**: DuckLake with metadata stored in PostgreSQL
 - **Orchestration**: Dagster for data pipeline orchestration
@@ -103,21 +107,25 @@ The codebase follows functional programming principles throughout the data pipel
 
 ## Key Directories
 
-### Current Structure (Phase 1 ✅ + Phase 2 Config System ✅)
+### Current Structure (Phase 1 ✅ + Phase 2 ✅)
 - `references/`: Project documentation and tool references
-- `data/`: Raw and processed data files (git-ignored, contains sample parquet files)
+- `data/`: Raw and processed data files (git-ignored, contains sample parquet files and extraction state)
 - `src/`: Source code for CLI tools and data functions
   - `cli.py`: Main CLI interface with Click commands
   - `nfl_explorer.py`: NFL data exploration logic (19 datasets supported)
   - `parquet_reader.py`: Parquet file reading and analysis
-  - `config_loader.py`: YAML configuration loader with validation (NEW)
-- `configs/`: Dataset extraction configurations (NEW)
+  - `config_loader.py`: YAML configuration loader with validation
+  - `nfl_extractor.py`: Production data extraction with retry logic and validation (NEW)
+  - `extraction_manager.py`: Incremental extraction and state management (NEW)
+- `configs/`: Dataset extraction configurations
   - `datasets/`: YAML configuration files for all 19 NFL datasets
-- `tests/`: Comprehensive test files for all components (65 test cases)
+- `tests/`: Comprehensive test files for all components (99 test cases)
   - `test_cli.py`: CLI command tests with mocking
   - `test_nfl_explorer.py`: NFLExplorer functionality tests
   - `test_parquet_reader.py`: ParquetReader tests with temporary files
-  - `test_config_loader.py`: Configuration system tests (NEW)
+  - `test_config_loader.py`: Configuration system tests
+  - `test_nfl_extractor.py`: Production extraction tests (NEW)
+  - `test_extraction_manager.py`: Incremental extraction tests (NEW)
 - `.pre-commit-config.yaml`: Pre-commit hooks configuration
 - `pyproject.toml`: Project dependencies and tool configurations
 - `README.md`: Complete usage documentation and examples
@@ -126,6 +134,76 @@ The codebase follows functional programming principles throughout the data pipel
 - `dbt/`: dbt models and configurations
 - `dagster/`: Orchestration assets and schedules
 - `ansible/`: Infrastructure as code for deployment
+
+## Production Data Extraction (Phase 2 ✅)
+
+### NFLDataExtractor - Production Extraction Engine
+Robust production-ready data extraction with comprehensive error handling:
+
+```python
+from src.nfl_extractor import NFLDataExtractor
+
+# Initialize extractor
+extractor = NFLDataExtractor()
+
+# Extract single dataset with full capabilities
+data, metadata = extractor.extract_dataset(
+    dataset_name='pbp',
+    year=2023,
+    validate=True,
+    save_to_disk=True
+)
+
+# Extract multiple years
+results = extractor.extract_multiple_years(
+    dataset_name='weekly',
+    years=[2020, 2021, 2022],
+    validate=True,
+    save_to_disk=True
+)
+```
+
+**Key Features:**
+- **Retry Logic**: Configurable retry attempts with exponential backoff
+- **Data Validation**: Validates required columns, row counts, and data quality
+- **File Management**: Automatic directory creation and parquet file generation
+- **Error Handling**: Comprehensive error capture and logging
+- **Metadata Tracking**: Detailed extraction metrics and timing information
+
+### ExtractionManager - Incremental Processing
+Smart incremental extraction with state management:
+
+```python
+from src.extraction_manager import ExtractionManager
+
+# Initialize manager
+manager = ExtractionManager()
+
+# Incremental extraction (skips already-extracted data)
+summary = manager.extract_incremental(
+    dataset_name='pbp',
+    years=[2020, 2021, 2022, 2023],
+    force_refresh=False,
+    max_age_days=1
+)
+
+# Get extraction status
+status = manager.get_extraction_summary('pbp')
+```
+
+**Key Features:**
+- **State Tracking**: JSON-based state file tracking all extractions
+- **Incremental Processing**: Only extracts missing or stale data
+- **Age-based Refresh**: Configurable data freshness requirements
+- **Cleanup Management**: Automatic cleanup of old extractions
+- **Status Reporting**: Comprehensive extraction summaries and statistics
+
+### Data Partitioning & Storage
+Configurable partitioning scheme based on dataset requirements:
+- **Year-based datasets**: `data/{dataset}/{year}/etl_date={etl_date}/data.parquet`
+- **Static datasets**: `data/{dataset}/etl_date={etl_date}/data.parquet`
+- **Compression**: Snappy compression for optimal performance
+- **Format**: Apache Parquet for analytics-ready storage
 
 ## Configuration System (Phase 2 ✅)
 
