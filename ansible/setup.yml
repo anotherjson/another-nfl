@@ -1,0 +1,18 @@
+---
+- name: Create .env file
+  copy:
+    dest: ".env"
+    content: |
+      # .env
+      # etl_date
+      ETL_DATE={{ ansible_date_time.iso8601 }}
+
+
+
+- name: Create virtual environment
+  ansible.builtin.command: uv venv -p 3.11
+  args:
+    creates: .venv
+
+- name: Install python packages
+  ansible.builtin.shell: uv add nfl_data_py pandas pyarrow fastparquet duckdb click ruff

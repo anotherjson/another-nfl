@@ -1,0 +1,16 @@
+[project]
+name = "another-nfl"
+version = "0.1.0"
+dependencies = [
+    "click>=8.2.1",
+    "duckdb>=1.3.2",
+    "fastparquet>=2024.11.0",
+    "nfl-data-py>=0.3.3",
+    "pandas>=1.5.3",
+    "pyarrow>=21.0.0",
+    "pytest>=8.4.1",
+    "ruff>=0.12.4",
+]
+
+[tool.dagster]
+module_name = "nfl_dagster.nfl_dagster"

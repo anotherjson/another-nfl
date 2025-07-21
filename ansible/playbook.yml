@@ -1,0 +1,7 @@
+---
+- name: Setup NFL Data Project
+  hosts: all
+  
+  tasks:
+    - name: Include setup tasks
+      include_tasks: setup.yml

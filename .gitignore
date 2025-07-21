@@ -751,3 +751,6 @@ ipython_config.py
 
 # End of https://mrkandreev.name/snippets/gitignore-generator/#C,R,Go,OSX,TeX,SSH,Git,Vim,zig,Lua,Zsh,macOS,Python,MicrosoftOffice,JupyterNotebooks
 
+dummy.parquet
+.venv
+.env
