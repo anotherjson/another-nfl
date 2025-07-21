@@ -2,14 +2,14 @@
 
 Welcome to the NFL Data Extraction Pipeline project! This guide will get you up to speed quickly on the current state and capabilities of the system.
 
-## 🚀 **Project Status: Phase 2 COMPLETE**
+## 🚀 **Project Status: Phase 3 COMPLETE**
 
-This is a **fully operational, production-ready NFL data extraction pipeline** with comprehensive CLI tools and robust data processing capabilities.
+This is a **fully operational, enterprise-grade data warehouse and analytics pipeline** with comprehensive CLI tools, dbt transformations, and Dagster orchestration.
 
 ### **What You're Working With**
 - ✅ **Phase 1**: Data exploration tools with Rich CLI interface (16 commands)
 - ✅ **Phase 2**: Production extraction pipeline with incremental processing (5 extraction commands)
-- 🏗️ **Phase 3**: dbt + Dagster integration (Future)
+- ✅ **Phase 3**: dbt Data Warehouse + Dagster orchestration (COMPLETE)
 
 ### **Current Capabilities**
 1. **Configuration-driven extraction** for all 19 NFL datasets
@@ -18,6 +18,10 @@ This is a **fully operational, production-ready NFL data extraction pipeline** w
 4. **Beautiful CLI interface** with Rich progress bars and tables
 5. **Comprehensive validation** with configurable rules
 6. **117+ test cases** with extensive coverage
+7. **dbt Data Warehouse** with staging, intermediate, and marts models
+8. **Dagster orchestration** with asset management and scheduling
+9. **DuckDB integration** for high-performance analytics
+10. **Analytics-ready models** for dashboards and ML
 
 ## ⚡ **Quick Start (30 seconds)**
 
@@ -31,7 +35,10 @@ uv run python -m src.cli explore data team_desc --limit 3
 # Test extraction status
 uv run python -m src.cli extract status
 
-# If all three work → System is healthy! ✅
+# Test Phase 3 system
+uv run python scripts/test_phase3.py
+
+# If all four work → System is healthy! ✅
 ```
 
 ## 📖 **Essential Reading Order**
@@ -49,6 +56,10 @@ uv run python -m src.cli extract status
 NFL API → Configuration System → Production Extractor → Validation → Parquet Files
                                         ↓
                                Incremental Manager → State Tracking → CLI Interface
+                                        ↓
+    dbt Staging → dbt Intermediate → dbt Marts ← → DuckDB Database
+                                        ↓
+                               Dagster Orchestration → Schedules & Monitoring
 ```
 
 ### **Key Components**
@@ -56,6 +67,9 @@ NFL API → Configuration System → Production Extractor → Validation → Par
 - **NFLDataExtractor**: Production extraction engine with retry logic
 - **ExtractionManager**: Incremental processing with state management
 - **CLI Interface**: User-friendly commands with Rich formatting
+- **dbt Models**: Data warehouse with staging, intermediate, and marts layers
+- **Dagster Assets**: Pipeline orchestration with asset management
+- **DuckDB**: High-performance analytical database
 
 ### **File Structure**
 ```
@@ -67,8 +81,18 @@ src/
   nfl_explorer.py         # Data exploration tools
   parquet_reader.py       # File analysis tools
 
+dbt/                      # Data warehouse (Phase 3)
+  models/staging/         # Raw data cleaning models
+  models/intermediate/    # Business logic models
+  models/marts/          # Analytics-ready models
+
+dagster/                  # Pipeline orchestration (Phase 3)
+  assets/                # Data assets (raw + dbt)
+  resources/             # DuckDB and dbt resources
+
 configs/datasets/         # 19 YAML configuration files
 tests/                    # 117+ comprehensive tests
+scripts/                  # Phase 3 validation scripts
 ```
 
 ## 🛠️ **Common Tasks & Commands**
@@ -99,6 +123,23 @@ uv run python -m src.cli extract incremental schedules --max-age-days 7
 # Status and management
 uv run python -m src.cli extract status pbp
 uv run python -m src.cli extract cleanup --max-age-days 30 --dry-run
+```
+
+### **Data Warehouse & Analytics (Phase 3)**
+```bash
+# dbt transformations
+cd dbt
+dbt deps && dbt run && dbt test
+
+# Dagster pipeline orchestration
+dagster dev -f dagster/definitions.py
+
+# Materialize specific assets
+dagster asset materialize --asset pbp_data
+dagster asset materialize --asset dbt_staging_models
+
+# Complete Phase 3 validation
+uv run python scripts/test_phase3.py
 ```
 
 ### **Quality Assurance**
@@ -193,6 +234,9 @@ summary = manager.extract_incremental('weekly', years=[2020, 2021])
 - **6 test modules** (117 comprehensive test cases)  
 - **5 extraction commands** with Rich UI
 - **Production-ready** error handling and retry logic
+- **Complete dbt project** with 13+ models and comprehensive testing
+- **Full Dagster pipeline** with asset management and scheduling
+- **Phase 3 validation** with 100% test coverage
 
 ### **Performance Characteristics**
 - **Configuration loading**: ~100ms for all 19 datasets
@@ -205,6 +249,8 @@ summary = manager.extract_incremental('weekly', years=[2020, 2021])
 - **Partitioning**: `data/{dataset}/{year}/etl_date={date}/data.parquet`
 - **Validation**: Required columns, row counts, and size checks
 - **State tracking**: JSON-based extraction history
+- **Data Warehouse**: DuckDB with analytics-ready models
+- **dbt Models**: Staged, intermediate, and mart layer tables
 
 ## 🎓 **Success Indicators**
 
@@ -215,7 +261,10 @@ You know you're succeeding when:
 ✅ **team_desc dataset** extracts successfully (always works)  
 ✅ **Status commands** show proper formatting  
 ✅ **Error messages are helpful** when things go wrong  
-✅ **Tests pass** for CLI, config, and extraction components  
+✅ **Tests pass** for CLI, config, and extraction components
+✅ **Phase 3 validation passes** with 100% success rate
+✅ **dbt models compile** without errors
+✅ **Dagster assets materialize** successfully  
 
 ## 🚀 **Next Steps for New Features**
 

@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This guide addresses common issues that new Claude instances might encounter when working with the NFL Data Explorer project.
+This guide addresses common issues that new Claude instances might encounter when working with the NFL Data Extraction and Analytics Pipeline project.
 
 ## Quick Diagnostics
 
@@ -11,6 +11,7 @@ uv --version  # Should show uv version
 python --version  # Should show Python 3.11+
 uv sync --dev  # Install dependencies
 uv run python -m src.cli --help  # Should show CLI help
+uv run python scripts/test_phase3.py  # Should pass all Phase 3 tests
 ```
 
 ### 2. Basic Functionality Test
@@ -18,8 +19,11 @@ uv run python -m src.cli --help  # Should show CLI help
 # This should ALWAYS work (no network required)
 uv run python -m src.cli explore data team_desc --limit 3
 
-# If the above fails, there's a setup issue
-# If it works, the CLI is functional
+# Test Phase 3 components
+cd dbt && dbt compile  # Should compile without errors
+dagster instance info   # Should show Dagster instance info
+
+# If all work, the system is functional
 ```
 
 ## Common Issues & Solutions
@@ -178,6 +182,12 @@ ruff format failed
 - [ ] `uv run python -m src.cli explore datasets` shows 19 datasets
 - [ ] `uv run python -m src.cli explore data team_desc` shows team data
 - [ ] `uv run python -m src.cli read data/sample_players.parquet` shows parquet data
+- [ ] `uv run python -m src.cli extract status` shows extraction status
+
+### ✅ Phase 3 Data Warehouse Working
+- [ ] `cd dbt && dbt compile` compiles all models successfully
+- [ ] `dagster instance info` shows Dagster instance information
+- [ ] `uv run python scripts/test_phase3.py` passes all validation tests
 
 ### ✅ Code Quality Working
 - [ ] `uv run ruff format .` runs without errors
@@ -195,6 +205,9 @@ ruff format failed
 - uv sync fails with dependency errors
 - Basic team_desc command fails
 - Import errors when running CLI
+- Phase 3 validation test fails completely
+- dbt compilation fails with syntax errors
+- Dagster instance fails to initialize
 
 ### ✅ CONTINUE - Expected Behaviors (Not Issues)
 - Some NFL datasets fail with network errors

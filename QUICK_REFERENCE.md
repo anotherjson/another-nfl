@@ -1,10 +1,10 @@
 # Quick Reference for New Claude Instances
 
-This document provides essential commands and information for working with the NFL Data Extraction Pipeline project.
+This document provides essential commands and information for working with the NFL Data Extraction and Analytics Pipeline project.
 
-## 🎯 Project Status: Phase 2 Complete ✅
+## 🎯 Project Status: Phase 3 Complete ✅
 
-This is a fully functional production-grade data extraction pipeline with comprehensive CLI tools and robust processing capabilities.
+This is a fully functional enterprise-grade data warehouse and analytics pipeline with comprehensive CLI tools, dbt transformations, and Dagster orchestration.
 
 ## ⚡ Essential Commands
 
@@ -12,6 +12,7 @@ This is a fully functional production-grade data extraction pipeline with compre
 ```bash
 uv sync --dev                           # Install dependencies
 uv run python -m src.cli --help        # Test CLI availability (explore + extract commands)
+uv run python scripts/test_phase3.py   # Test complete Phase 3 system
 ```
 
 ### Data Exploration (Always Works)
@@ -39,6 +40,27 @@ uv run python -m src.cli extract status pbp --verbose
 uv run python -m src.cli extract cleanup --max-age-days 30 --dry-run
 ```
 
+### Data Warehouse & Analytics (Phase 3)
+```bash
+# dbt transformations
+cd dbt
+dbt deps                              # Install dbt packages
+dbt run --select tag:staging         # Run staging models
+dbt run                               # Run all models
+dbt test                              # Run data quality tests
+dbt docs generate && dbt docs serve  # Generate and serve documentation
+
+# Dagster orchestration
+dagster dev -f dagster/definitions.py              # Start Dagster UI
+dagster asset materialize --asset pbp_data         # Extract raw data
+dagster asset materialize --asset dbt_staging_models  # Run staging models
+dagster asset materialize --asset dbt_marts_models    # Run marts models
+
+# Combined workflows
+cd dbt && dbt run && dbt test && cd .. # Full dbt pipeline
+uv run python scripts/test_phase3.py  # Complete system validation
+```
+
 ### Development
 ```bash
 uv run ruff format . && uv run ruff check .     # Format and lint
@@ -53,6 +75,8 @@ uv run pytest --cov=src                         # Full test suite with coverage
 uv run python -m src.cli explore data team_desc              # Always works
 uv run python -m src.cli extract status                      # Check extraction state
 uv run python -c "from src.config_loader import ConfigLoader; print(len(ConfigLoader().list_datasets()))"  # Test config
+cd dbt && dbt compile                                         # Test dbt compilation
+dagster instance info                                         # Test Dagster setup
 ```
 
 ## 📊 Dataset Quick Reference
@@ -105,6 +129,26 @@ summary = manager.extract_incremental('pbp', years=[2020, 2021], max_age_days=7)
 status = manager.get_extraction_summary('weekly')
 ```
 
+### dbt Operations (Phase 3)
+```python
+from dagster.resources.dbt_resource import DbtResource
+
+dbt = DbtResource()
+result = dbt.run(select="tag:staging")    # Run staging models
+test_result = dbt.test()                  # Run data tests
+docs_result = dbt.docs_generate()         # Generate documentation
+```
+
+### Dagster Assets (Phase 3)
+```python
+from dagster import asset, AssetExecutionContext
+
+@asset(description="Extract NFL team data")
+def team_data(context: AssetExecutionContext):
+    # Asset implementation
+    return {"success": True}
+```
+
 ### CLI Testing
 ```python
 from click.testing import CliRunner
@@ -142,8 +186,16 @@ src/
   extraction_manager.py  # Incremental processing
   nfl_explorer.py        # Data exploration
   parquet_reader.py      # File operations
+dbt/                     # Data warehouse (Phase 3)
+  models/staging/        # Raw data cleaning models
+  models/intermediate/   # Business logic models  
+  models/marts/         # Analytics-ready models
+dagster/                # Pipeline orchestration (Phase 3)
+  assets/               # Data assets (raw + dbt)
+  resources/           # DuckDB and dbt resources
 configs/datasets/        # 19 YAML configuration files
 tests/                   # 117+ comprehensive tests
+scripts/                 # Phase 3 validation scripts
 ```
 
 ## 🎯 Success Checklist
@@ -154,6 +206,9 @@ tests/                   # 117+ comprehensive tests
 - [ ] `extract status` command works
 - [ ] CLI tests pass consistently
 - [ ] Error messages are helpful and clear
+- [ ] Phase 3 validation passes: `uv run python scripts/test_phase3.py`
+- [ ] dbt models compile: `cd dbt && dbt compile`
+- [ ] Dagster definitions load: `dagster instance info`
 
 ## Validation Checklist
 
@@ -181,6 +236,9 @@ uv run ruff check .
 # 7. Tests
 uv run pytest tests/test_cli.py -v
 uv run pytest tests/test_config_loader.py -v
+
+# 8. Phase 3 validation
+uv run python scripts/test_phase3.py
 ```
 
 If all the above work, the system is functioning correctly.
@@ -200,9 +258,11 @@ If all the above work, the system is functioning correctly.
 3. **Configuration system** loads all 19 datasets automatically
 4. **CLI tests are reliable** - focus on those for validation
 5. **Network errors are expected** with some NFL datasets
-6. **Phase 2 is complete** - Production extraction pipeline is ready
+6. **Phase 3 is complete** - Full data warehouse and orchestration ready
 7. **117+ test cases** provide comprehensive coverage
+8. **dbt models** provide analytics-ready data transformations
+9. **Dagster pipeline** orchestrates the complete data flow
 
 ---
 
-*Last Updated: Phase 2 completion - Production extraction pipeline*
+*Last Updated: Phase 3 completion - Enterprise data warehouse and analytics pipeline*

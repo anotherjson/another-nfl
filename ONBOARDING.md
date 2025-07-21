@@ -4,11 +4,11 @@ Welcome! This guide will get you up to speed on the NFL Data Explorer project in
 
 ## 🎯 What You Need to Know
 
-### Project Status: Phase 1 Complete ✅
-You're working with a **fully functional CLI tool** that explores NFL data. It's production-ready with comprehensive error handling and rich formatting.
+### Project Status: Phase 3 Complete ✅
+You're working with a **comprehensive enterprise data warehouse and analytics pipeline** that includes data exploration, production extraction, dbt transformations, and Dagster orchestration.
 
 ### Your Mission
-Help users explore NFL data, add new features, or prepare for Phase 2 (data extraction pipeline).
+Help users with data analysis, add new features, enhance the data warehouse, or prepare for Phase 4 (advanced analytics and ML).
 
 ## ⚡ Quick Start (2 minutes)
 
@@ -22,7 +22,12 @@ Help users explore NFL data, add new features, or prepare for Phase 2 (data extr
    uv run python -m src.cli explore data team_desc --limit 3
    ```
 
-3. **If both work → You're ready to go! 🚀**
+3. **Test Phase 3:**
+   ```bash
+   uv run python scripts/test_phase3.py
+   ```
+
+4. **If all three work → You're ready to go! 🚀**
 
 ## 📖 Essential Reading Order
 
@@ -35,16 +40,19 @@ Help users explore NFL data, add new features, or prepare for Phase 2 (data extr
 
 ### What It Does
 - **Explores 19 NFL datasets** via command line
-- **Beautiful output** with Rich library formatting
-- **Handles errors gracefully** with helpful messages
-- **Reads parquet files** with detailed analysis
+- **Extracts data at production scale** with robust processing
+- **Transforms data** using dbt into analytics-ready models
+- **Orchestrates pipelines** with Dagster for automation
+- **Provides analytics-ready data** for dashboards and ML
 
 ### What Makes It Special
 - **Professional CLI** with Click framework
 - **Comprehensive error handling** with verbose mode
 - **Rich formatted tables** that look great
-- **82% test coverage** with extensive test suite
+- **117+ test coverage** with extensive validation
 - **Functional programming** design patterns
+- **Enterprise data warehouse** with staging, intermediate, and marts layers
+- **Production orchestration** with scheduling and monitoring
 
 ## 🛠️ Core Commands You'll Use
 
@@ -52,12 +60,20 @@ Help users explore NFL data, add new features, or prepare for Phase 2 (data extr
 # Daily development
 uv run python -m src.cli explore datasets                    # List all datasets
 uv run python -m src.cli explore data team_desc --limit 5    # Safe test
+uv run python -m src.cli extract status                      # Check extraction state
+uv run python scripts/test_phase3.py                         # Full system validation
 uv run ruff format . && uv run ruff check .                  # Code quality
 uv run pytest tests/test_cli.py -v                           # Test CLI
+
+# dbt and Dagster development
+cd dbt && dbt run && dbt test                                # Full dbt pipeline
+dagster dev -f dagster/definitions.py                        # Start Dagster UI
+dagster asset materialize --asset dbt_staging_models         # Run specific assets
 
 # When things break
 uv run python -m src.cli explore data team_desc              # Always works
 uv run python -m src.cli explore data pbp --verbose          # Debug errors
+cd dbt && dbt compile                                         # Test dbt compilation
 ```
 
 ## ⚠️ Important Gotchas
