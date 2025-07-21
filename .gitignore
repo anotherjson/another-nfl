@@ -1,6 +1,105 @@
-# Data files
+# Data files - Raw and processed NFL data
 data/
 # sql/ # including sql files for this project
+
+# Environment and Configuration Files
+.env*
+.environment
+config.ini
+config.yaml
+config.yml
+config.json
+secrets.yaml
+secrets.yml
+secrets.json
+settings.ini
+settings.yaml
+settings.yml
+local_settings.py
+
+# Database Files and Configs
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+database.ini
+database.yaml
+database.yml
+db_config.*
+connection_string.*
+
+# API Keys and Credentials
+*api_key*
+*secret_key*
+*access_token*
+*refresh_token*
+*credentials*
+*auth*
+.credentials/
+.auth/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Docker and Infrastructure
+docker-compose.override.yml
+docker-compose.local.yml
+.dockerignore
+Dockerfile.local
+
+# Ansible and Infrastructure as Code
+ansible/inventories/*/host_vars/
+ansible/inventories/*/group_vars/
+ansible/vault_pass.txt
+ansible_vault_password
+*.vault
+group_vars/*/vault.yml
+host_vars/*/vault.yml
+
+# Cloud Provider Configurations
+.aws/
+.azure/
+.gcp/
+terraform.tfvars
+terraform.tfstate*
+.terraform/
+
+# NFL Data Project Specific
+# Dagster instance and run storage
+dagster_home/
+.dagster/
+dagster.yaml
+dagster_local.yaml
+
+# dbt profiles and logs
+profiles.yml
+dbt_packages/
+logs/
+target/
+.dbt/
+
+# PostgreSQL and DuckDB
+postgresql.conf
+pg_hba.conf
+*.duckdb
+*.duckdb.wal
+
+# Parquet and Data Lake files (if not in data/)
+*.parquet
+*.arrow
+*.feather
+
+# Logs and temporary processing files
+*.log
+logs/
+tmp/
+temp/
+.tmp/
+staging/
+raw_data/
+processed_data/
 
 # Prerequisites
 *.d
