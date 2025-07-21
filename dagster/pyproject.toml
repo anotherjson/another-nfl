@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nfl_dagster"
+version = "1.0.0"
+description = "Dagster pipeline for NFL analytics"
+
+[tool.dagster]
+module_name = "dagster.definitions"

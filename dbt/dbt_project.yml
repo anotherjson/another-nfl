@@ -1,0 +1,66 @@
+# dbt_project.yml
+
+name: 'nfl_analytics'
+version: '1.0.0'
+config-version: 2
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'nfl_analytics'
+
+# These configurations specify where dbt should look for different types of files.
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+  - "logs"
+
+# Configuring models
+# Full documentation: https://docs.getdbt.com/docs/configuring-models
+
+models:
+  nfl_analytics:
+    # Configuration for staging models
+    staging:
+      +materialized: view
+      +docs:
+        node_color: "#8FBC8F"  # DarkSeaGreen
+    
+    # Configuration for intermediate models
+    intermediate:
+      +materialized: table
+      +docs:
+        node_color: "#4682B4"  # SteelBlue
+    
+    # Configuration for marts models
+    marts:
+      +materialized: table
+      +indexes:
+        - columns: ['team_id']
+        - columns: ['player_id'] 
+        - columns: ['game_date']
+      +docs:
+        node_color: "#CD853F"  # Peru
+
+# Global configurations
+vars:
+  # Date range variables for development
+  start_date: '1999-01-01'
+  end_date: '2024-12-31'
+  
+  # NFL season configurations
+  current_season: 2024
+  regular_season_weeks: 18
+  playoff_weeks: 4
+
+# Seeds configuration
+seeds:
+  nfl_analytics:
+    +column_types:
+      team_id: varchar(3)
+      player_id: varchar(50)

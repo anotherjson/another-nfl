@@ -1,0 +1,66 @@
+# schema.yml - Global model documentation and tests
+
+version: 2
+
+models:
+  - name: staging
+    description: "Staging models for raw NFL data cleaning and standardization"
+    
+  - name: intermediate
+    description: "Intermediate models for business logic and aggregations"
+    
+  - name: marts
+    description: "Analytics-ready models for downstream consumption"
+
+sources:
+  - name: nfl_raw_data
+    description: "Raw NFL data extracted from nfl_data_py"
+    tables:
+      - name: pbp
+        description: "Play-by-play data from NFL games"
+        columns:
+          - name: game_id
+            description: "Unique identifier for each game"
+            tests:
+              - not_null
+          - name: play_id
+            description: "Unique identifier for each play within a game"
+          - name: season
+            description: "NFL season year"
+            tests:
+              - not_null
+          - name: week
+            description: "Week number within the season"
+          - name: game_date
+            description: "Date when the game was played"
+            
+      - name: weekly
+        description: "Weekly player statistics"
+        columns:
+          - name: player_id
+            description: "Unique identifier for each player"
+            tests:
+              - not_null
+          - name: season
+            description: "NFL season year"
+            tests:
+              - not_null
+          - name: week
+            description: "Week number within the season"
+          - name: team
+            description: "Player's team abbreviation"
+            
+      - name: team_desc
+        description: "Team descriptions and information"
+        columns:
+          - name: team_abbr
+            description: "Team abbreviation (primary key)"
+            tests:
+              - not_null
+              - unique
+          - name: team_name
+            description: "Full team name"
+          - name: team_conf
+            description: "Conference (AFC/NFC)"
+          - name: team_division
+            description: "Division within conference"

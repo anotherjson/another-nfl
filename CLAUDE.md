@@ -8,7 +8,7 @@ This is an NFL data extraction and analysis project that builds a modern data pi
 
 ## Technology Stack
 
-### Currently Implemented (Phase 1 ✅ + Phase 2 ✅)
+### Currently Implemented (Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅)
 - **Python Environment**: Python 3.11 with `uv` for virtual environment and package management
 - **CLI Framework**: Click for command-line interface with Rich for formatted output
 - **Data Source**: `nfl_data_py` Python package (19 NFL datasets supported)
@@ -22,13 +22,17 @@ This is an NFL data extraction and analysis project that builds a modern data pi
 - **Data Partitioning**: Year-based and ETL-date partitioning with configurable paths
 - **Incremental Processing**: ExtractionManager with state tracking and incremental updates
 - **Data Validation**: Comprehensive validation with required column checks and size estimates
+- **dbt Data Warehouse**: Complete dbt project with staging, intermediate, and marts models
+- **Dagster Orchestration**: Production-ready pipeline orchestration with scheduling and monitoring
+- **DuckDB Integration**: High-performance analytical database for transformations
+- **Data Quality Testing**: Comprehensive dbt tests and data validation rules
 
-### Future Implementation (Phase 3+)
-- **Data Storage**: Parquet files partitioned by ETL date
-- **Data Lake**: DuckLake with metadata stored in PostgreSQL
-- **Orchestration**: Dagster for data pipeline orchestration
-- **Transformations**: dbt for data modeling and transformations
+### Future Implementation (Phase 4+)
+- **Advanced Analytics**: Machine learning models for player performance prediction
+- **Real-time Processing**: Live game data ingestion and processing
+- **API Layer**: REST API for serving analytics data
 - **Containerization**: Podman with Docker Compose for service orchestration
+- **Cloud Deployment**: Production infrastructure with Dagster Cloud
 - **Infrastructure**: Ansible for environment setup and deployment
 
 ## Development Commands
@@ -59,6 +63,22 @@ uv run python -m src.cli extract multiple weekly --years 2020,2021,2022
 uv run python -m src.cli extract incremental pbp --max-age-days 7
 uv run python -m src.cli extract status
 uv run python -m src.cli extract cleanup --max-age-days 30
+
+# dbt commands - Data Transformations (Phase 3)
+cd dbt
+dbt deps
+dbt run --select tag:staging
+dbt run
+dbt test
+dbt docs generate && dbt docs serve
+
+# Dagster commands - Pipeline Orchestration (Phase 3)  
+dagster dev -f dagster/definitions.py
+dagster asset materialize --asset pbp_data
+dagster asset materialize --asset dbt_staging_models
+
+# Phase 3 testing
+uv run python scripts/test_phase3.py
 
 # Pre-commit hooks
 uv run pre-commit install

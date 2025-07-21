@@ -1,0 +1,76 @@
+# _marts.yml - Marts model configurations
+
+version: 2
+
+models:
+  - name: mart_weekly_team_stats
+    description: "Weekly team performance metrics for dashboard consumption"
+    config:
+      tags: ["marts", "analytics", "team_performance"]
+    columns:
+      - name: team_id
+        description: "Team abbreviation"
+        tests:
+          - not_null
+          - unique:
+              where: "season = 2024 and week = 1"  # Sample uniqueness test
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+      - name: league_yards_rank
+        description: "League ranking by total yards"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 32
+              
+  - name: mart_player_season_stats  
+    description: "Season-aggregated player statistics for fantasy and performance analysis"
+    config:
+      tags: ["marts", "analytics", "player_stats"]
+    columns:
+      - name: player_id
+        description: "Unique identifier for each player"
+        tests:
+          - not_null
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+      - name: games_played
+        description: "Number of games played"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 22
+      - name: position_group_rank
+        description: "Ranking within position group"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 500
+              
+  - name: mart_game_results
+    description: "Game results and matchup analysis"  
+    config:
+      tags: ["marts", "analytics", "game_results"]
+    columns:
+      - name: game_id
+        description: "Unique identifier for each game"
+        tests:
+          - not_null
+          - unique
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+      - name: total_points
+        description: "Combined points scored in game"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 6
+              max_value: 100
