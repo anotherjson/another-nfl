@@ -1,0 +1,22 @@
+# Team depth charts configuration
+name: depth_charts
+description: "Team depth charts and position rankings"
+function_name: import_depth_charts
+start_year: 2001
+requires_year: true
+data_type: depth_charts
+partition_by: year
+validation:
+  required_columns:
+    - player_id
+    - team
+    - season
+  expected_size_mb: 20
+extraction:
+  chunk_size: 1000
+  timeout_seconds: 120
+  retry_attempts: 3
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"

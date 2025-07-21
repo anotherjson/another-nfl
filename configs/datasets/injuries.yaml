@@ -1,0 +1,22 @@
+# Player injury reports configuration
+name: injuries
+description: "Player injury reports and status"
+function_name: import_injuries
+start_year: 2009
+requires_year: true
+data_type: injuries
+partition_by: year
+validation:
+  required_columns:
+    - player_id
+    - season
+    - week
+  expected_size_mb: 25
+extraction:
+  chunk_size: 1000
+  timeout_seconds: 120
+  retry_attempts: 3
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"

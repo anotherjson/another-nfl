@@ -1,0 +1,22 @@
+# Seasonal team rosters configuration
+name: seasonal_rosters
+description: "Seasonal team roster information"
+function_name: import_seasonal_rosters
+start_year: 1999
+requires_year: true
+data_type: roster_seasonal
+partition_by: year
+validation:
+  required_columns:
+    - player_id
+    - team
+    - season
+  expected_size_mb: 15
+extraction:
+  chunk_size: 1000
+  timeout_seconds: 90
+  retry_attempts: 3
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"

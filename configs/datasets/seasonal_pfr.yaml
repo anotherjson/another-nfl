@@ -1,0 +1,21 @@
+# Pro Football Reference seasonal stats configuration
+name: seasonal_pfr
+description: "Pro Football Reference seasonal statistics"
+function_name: import_pfr_seasonal
+start_year: 1932
+requires_year: true
+data_type: pfr_seasonal
+partition_by: year
+validation:
+  required_columns:
+    - player_id
+    - season
+  expected_size_mb: 40
+extraction:
+  chunk_size: 1000
+  timeout_seconds: 180
+  retry_attempts: 3
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"

@@ -1,0 +1,21 @@
+# Player information configuration
+name: players
+description: "Player information and biographical data (static data)"
+function_name: import_players
+start_year: null  # No year limitation
+requires_year: false
+data_type: reference
+partition_by: etl_date_only
+validation:
+  required_columns:
+    - player_id
+    - player_name
+  expected_size_mb: 5
+extraction:
+  chunk_size: null  # Single extraction
+  timeout_seconds: 60
+  retry_attempts: 2
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/etl_date={etl_date}/data.parquet"

@@ -1,0 +1,21 @@
+# Fantasy Points allowed data configuration
+name: ftn_data
+description: "Fantasy Points allowed by position data"
+function_name: import_ftn_data
+start_year: 2018
+requires_year: true
+data_type: fantasy
+partition_by: year
+validation:
+  required_columns:
+    - season
+    - week
+  expected_size_mb: 10
+extraction:
+  chunk_size: 1000
+  timeout_seconds: 90
+  retry_attempts: 3
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"

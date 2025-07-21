@@ -1,0 +1,23 @@
+# Game schedules configuration
+name: schedules
+description: "NFL game schedules and results"
+function_name: import_schedules
+start_year: 1999
+requires_year: true
+data_type: game_schedule
+partition_by: year
+validation:
+  required_columns:
+    - game_id
+    - home_team
+    - away_team
+    - gameday
+  expected_size_mb: 5
+extraction:
+  chunk_size: 1000
+  timeout_seconds: 60
+  retry_attempts: 3
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"

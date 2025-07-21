@@ -1,0 +1,21 @@
+# Game officials configuration
+name: officials
+description: "NFL game officials data"
+function_name: import_officials
+start_year: 2001
+requires_year: true
+data_type: game_officials
+partition_by: year
+validation:
+  required_columns:
+    - game_id
+    - official_id
+  expected_size_mb: 5
+extraction:
+  chunk_size: 1000
+  timeout_seconds: 60
+  retry_attempts: 3
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"

@@ -1,0 +1,22 @@
+# Pro Football Reference weekly stats configuration
+name: weekly_pfr
+description: "Pro Football Reference weekly statistics"
+function_name: import_pfr_weekly
+start_year: 1932
+requires_year: true
+data_type: pfr_weekly
+partition_by: year
+validation:
+  required_columns:
+    - player_id
+    - season
+    - week
+  expected_size_mb: 100
+extraction:
+  chunk_size: 1000
+  timeout_seconds: 240
+  retry_attempts: 3
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"

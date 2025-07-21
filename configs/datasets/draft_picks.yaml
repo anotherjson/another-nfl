@@ -1,0 +1,22 @@
+# NFL Draft picks configuration
+name: draft_picks
+description: "NFL Draft picks historical data"
+function_name: import_draft_picks
+start_year: 1936
+requires_year: true
+data_type: draft
+partition_by: year
+validation:
+  required_columns:
+    - season
+    - round
+    - pick
+  expected_size_mb: 8
+extraction:
+  chunk_size: 1000
+  timeout_seconds: 60
+  retry_attempts: 3
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"

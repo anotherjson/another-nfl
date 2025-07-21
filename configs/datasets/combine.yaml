@@ -1,0 +1,21 @@
+# NFL Combine results configuration
+name: combine
+description: "NFL Combine results and measurements"
+function_name: import_combine_data
+start_year: 1987
+requires_year: true
+data_type: combine
+partition_by: year
+validation:
+  required_columns:
+    - player_id
+    - season
+  expected_size_mb: 10
+extraction:
+  chunk_size: 1000
+  timeout_seconds: 90
+  retry_attempts: 3
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"

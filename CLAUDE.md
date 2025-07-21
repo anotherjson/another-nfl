@@ -8,16 +8,18 @@ This is an NFL data extraction and analysis project that builds a modern data pi
 
 ## Technology Stack
 
-### Currently Implemented (Phase 1 ✅)
+### Currently Implemented (Phase 1 ✅ + Phase 2 Config System ✅)
 - **Python Environment**: Python 3.11 with `uv` for virtual environment and package management
 - **CLI Framework**: Click for command-line interface with Rich for formatted output
 - **Data Source**: `nfl_data_py` Python package (19 NFL datasets supported)
 - **Data Analysis**: pandas for data manipulation, pyarrow for Parquet file handling
 - **Code Quality**: Ruff for formatting and linting with pre-commit hooks
-- **Testing**: pytest with coverage reporting (82% coverage achieved)
+- **Testing**: pytest with coverage reporting (97% coverage achieved)
 - **Documentation**: Comprehensive README and usage examples
+- **Configuration System**: YAML-based configuration for all 19 NFL datasets with validation
+- **Configuration Management**: PyYAML integration with comprehensive config loader
 
-### Future Implementation (Phase 2+)
+### In Progress (Phase 2 Data Extraction)
 - **Data Storage**: Parquet files partitioned by ETL date
 - **Data Lake**: DuckLake with metadata stored in PostgreSQL
 - **Orchestration**: Dagster for data pipeline orchestration
@@ -101,17 +103,21 @@ The codebase follows functional programming principles throughout the data pipel
 
 ## Key Directories
 
-### Current Structure (Phase 1 ✅)
+### Current Structure (Phase 1 ✅ + Phase 2 Config System ✅)
 - `references/`: Project documentation and tool references
 - `data/`: Raw and processed data files (git-ignored, contains sample parquet files)
 - `src/`: Source code for CLI tools and data functions
   - `cli.py`: Main CLI interface with Click commands
   - `nfl_explorer.py`: NFL data exploration logic (19 datasets supported)
   - `parquet_reader.py`: Parquet file reading and analysis
-- `tests/`: Comprehensive test files for all components (44 test cases)
+  - `config_loader.py`: YAML configuration loader with validation (NEW)
+- `configs/`: Dataset extraction configurations (NEW)
+  - `datasets/`: YAML configuration files for all 19 NFL datasets
+- `tests/`: Comprehensive test files for all components (65 test cases)
   - `test_cli.py`: CLI command tests with mocking
   - `test_nfl_explorer.py`: NFLExplorer functionality tests
   - `test_parquet_reader.py`: ParquetReader tests with temporary files
+  - `test_config_loader.py`: Configuration system tests (NEW)
 - `.pre-commit-config.yaml`: Pre-commit hooks configuration
 - `pyproject.toml`: Project dependencies and tool configurations
 - `README.md`: Complete usage documentation and examples
@@ -119,8 +125,62 @@ The codebase follows functional programming principles throughout the data pipel
 ### Future Directories (Phase 2+)
 - `dbt/`: dbt models and configurations
 - `dagster/`: Orchestration assets and schedules
-- `configs/`: Dataset extraction configurations
 - `ansible/`: Infrastructure as code for deployment
+
+## Configuration System (Phase 2 ✅)
+
+### Dataset Configuration Management
+The project now includes a comprehensive YAML-based configuration system for all 19 NFL datasets:
+
+- **Individual YAML files** for each dataset in `configs/datasets/`
+- **Validation system** ensures configuration integrity
+- **Dynamic path generation** for year-based and ETL-date partitioning
+- **Dataset metadata** including start years, data types, and extraction parameters
+
+### Configuration Structure
+Each dataset configuration includes:
+```yaml
+name: dataset_name
+description: "Human-readable description"
+function_name: nfl_data_py_function_name
+start_year: 1999  # or null for no year limitation
+requires_year: true/false
+data_type: category (e.g., game_level, player_weekly)
+partition_by: year | etl_date_only
+validation:
+  required_columns: [list of expected columns]
+  expected_size_mb: estimated file size
+extraction:
+  timeout_seconds: API timeout
+  retry_attempts: number of retries
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"
+```
+
+### Using the Configuration System
+```python
+from src.config_loader import ConfigLoader
+
+# Load all configurations
+loader = ConfigLoader()
+
+# Get specific dataset config
+pbp_config = loader.get_dataset_config('pbp')
+
+# List all datasets
+datasets = loader.list_datasets()
+
+# Get datasets by type
+game_datasets = loader.get_datasets_by_type('game_level')
+
+# Validate year for dataset
+loader.validate_year_for_dataset('pbp', 2023)
+
+# Generate output path
+path = loader.get_output_path('pbp', year=2023, etl_date='2024-01-15')
+```
 
 ## NFL Data Considerations
 

@@ -1,0 +1,22 @@
+# Next Gen Stats data configuration
+name: ngs_data
+description: "Next Gen Stats player tracking data"
+function_name: import_ngs_data
+start_year: 2016
+requires_year: true
+data_type: ngs
+partition_by: year
+validation:
+  required_columns:
+    - player_id
+    - season
+    - week
+  expected_size_mb: 50
+extraction:
+  chunk_size: 1000
+  timeout_seconds: 200
+  retry_attempts: 3
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"

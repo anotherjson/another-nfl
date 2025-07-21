@@ -1,0 +1,23 @@
+# Play-by-play data configuration
+name: pbp
+description: "NFL play-by-play data with detailed game information"
+function_name: import_pbp_data
+start_year: 1999
+requires_year: true
+data_type: game_level
+partition_by: year
+validation:
+  required_columns:
+    - game_id
+    - play_id
+    - posteam
+    - defteam
+  expected_size_mb: 500  # Approximate expected size per year
+extraction:
+  chunk_size: 1000
+  timeout_seconds: 300
+  retry_attempts: 3
+output:
+  file_format: parquet
+  compression: snappy
+  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"
