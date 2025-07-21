@@ -19,7 +19,9 @@ The primary objective is to extract data using the `nfl_data_py` Python package 
 
 ## Project Phases
 
-### Phase 1: Project Setup and Exploration CLI
+### Phase 1: Project Setup and Exploration CLI (Completed)
+
+**Summary:** This phase established the foundational infrastructure for the project. An Ansible playbook was created to automate the setup of a `uv`-managed Python environment. A command-line interface (CLI) was developed using `click` to enable exploration of the `nfl_data_py` library and to inspect Parquet files. The project structure was created following Dagster best practices, and the entire CLI tool is covered by unit tests.
 
 1.  **Environment Setup:**
     -   Use `ansible` to create playbooks for setting up development and production environments.
