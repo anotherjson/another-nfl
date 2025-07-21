@@ -1,10 +1,10 @@
-# Quick Reference for New Claude Instances
+# Essential Commands Reference
 
-This document provides essential commands and information for working with the NFL Data Extraction and Analytics Pipeline project.
+Quick reference for daily development tasks with the NFL Data Pipeline.
 
-## 🎯 Project Status: Phase 3 Complete ✅
+## 🎯 System Status: Phase 3 Complete ✅
 
-This is a fully functional enterprise-grade data warehouse and analytics pipeline with comprehensive CLI tools, dbt transformations, and Dagster orchestration.
+Enterprise data warehouse with CLI tools, dbt transformations, and Dagster orchestration.
 
 ## ⚡ Essential Commands
 

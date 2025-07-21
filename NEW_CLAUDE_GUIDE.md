@@ -1,27 +1,17 @@
-# New Claude Instance Guide - NFL Data Extraction Pipeline
+# New Claude Instance Quick Start Guide
 
-Welcome to the NFL Data Extraction Pipeline project! This guide will get you up to speed quickly on the current state and capabilities of the system.
+Welcome! This guide gets you productive with the NFL Data Pipeline in under 5 minutes.
 
 ## 🚀 **Project Status: Phase 3 COMPLETE**
 
-This is a **fully operational, enterprise-grade data warehouse and analytics pipeline** with comprehensive CLI tools, dbt transformations, and Dagster orchestration.
+Enterprise-grade data warehouse with CLI tools, dbt transformations, and Dagster orchestration.
 
-### **What You're Working With**
-- ✅ **Phase 1**: Data exploration tools with Rich CLI interface (16 commands)
-- ✅ **Phase 2**: Production extraction pipeline with incremental processing (5 extraction commands)
-- ✅ **Phase 3**: dbt Data Warehouse + Dagster orchestration (COMPLETE)
-
-### **Current Capabilities**
-1. **Configuration-driven extraction** for all 19 NFL datasets
-2. **Production-grade retry logic** with exponential backoff
-3. **Incremental processing** with state tracking and age-based refresh
-4. **Beautiful CLI interface** with Rich progress bars and tables
-5. **Comprehensive validation** with configurable rules
-6. **117+ test cases** with extensive coverage
-7. **dbt Data Warehouse** with staging, intermediate, and marts models
-8. **Dagster orchestration** with asset management and scheduling
-9. **DuckDB integration** for high-performance analytics
-10. **Analytics-ready models** for dashboards and ML
+### **Core Capabilities**
+- ✅ **Data Exploration**: CLI interface for 19 NFL datasets
+- ✅ **Production Extraction**: Robust pipeline with retry logic and validation  
+- ✅ **Data Warehouse**: dbt models (staging → intermediate → marts)
+- ✅ **Orchestration**: Dagster scheduling and monitoring
+- ✅ **Analytics Ready**: Models for dashboards and ML
 
 ## ⚡ **Quick Start (30 seconds)**
 

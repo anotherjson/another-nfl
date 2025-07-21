@@ -1,58 +1,50 @@
-# New Claude Instance Onboarding Guide
+# Development Patterns & Best Practices
 
-Welcome! This guide will get you up to speed on the NFL Data Explorer project in 10 minutes.
+This guide covers development patterns, code conventions, and testing strategies for the NFL Data Pipeline project.
 
-## 🎯 What You Need to Know
+## 🎯 Development Philosophy
 
-### Project Status: Phase 3 Complete ✅
-You're working with a **comprehensive enterprise data warehouse and analytics pipeline** that includes data exploration, production extraction, dbt transformations, and Dagster orchestration.
+### Architecture Principles
+- **Functional programming paradigm** throughout the codebase
+- **Configuration-driven** behavior using YAML configs
+- **Comprehensive error handling** with graceful degradation
+- **Rich CLI interfaces** with beautiful formatting
+- **Production-ready** extraction with retry logic and validation
 
-### Your Mission
-Help users with data analysis, add new features, enhance the data warehouse, or prepare for Phase 4 (advanced analytics and ML).
+## 🛠️ Development Patterns
 
-## ⚡ Quick Start (2 minutes)
+### Code Organization
+```
+src/
+  cli.py              # Click-based CLI with Rich formatting
+  config_loader.py    # YAML configuration system
+  nfl_extractor.py    # Production extraction with retry logic
+  extraction_manager.py # Incremental processing
+  nfl_explorer.py     # Data exploration functionality
+  parquet_reader.py   # File operations
+```
 
-1. **Verify Setup:**
-   ```bash
-   uv run python -m src.cli --help
-   ```
+### Key Design Patterns
+1. **Configuration-First**: All dataset behavior driven by YAML configs
+2. **Rich CLI**: Beautiful table formatting and progress bars
+3. **Comprehensive Testing**: Mocked external APIs, focused on CLI reliability
+4. **Error Handling**: Graceful failures with helpful user messages
 
-2. **Test Core Function:**
-   ```bash
-   uv run python -m src.cli explore data team_desc --limit 3
-   ```
+### Adding New Features
 
-3. **Test Phase 3:**
-   ```bash
-   uv run python scripts/test_phase3.py
-   ```
+#### CLI Commands
+1. **Study existing patterns** in `src/cli.py`
+2. **Use Click decorators** for argument parsing
+3. **Add Rich formatting** for beautiful output
+4. **Include error handling** with verbose mode
+5. **Write CLI tests** with proper mocking
 
-4. **If all three work → You're ready to go! 🚀**
-
-## 📖 Essential Reading Order
-
-1. **This file** (ONBOARDING.md) - You're here
-2. **QUICK_REFERENCE.md** - Commands you'll use daily
-3. **CLAUDE.md** - Comprehensive project guidance
-4. **TROUBLESHOOTING.md** - When things go wrong
-
-## 🔍 Understanding the Project
-
-### What It Does
-- **Explores 19 NFL datasets** via command line
-- **Extracts data at production scale** with robust processing
-- **Transforms data** using dbt into analytics-ready models
-- **Orchestrates pipelines** with Dagster for automation
-- **Provides analytics-ready data** for dashboards and ML
-
-### What Makes It Special
-- **Professional CLI** with Click framework
-- **Comprehensive error handling** with verbose mode
-- **Rich formatted tables** that look great
-- **117+ test coverage** with extensive validation
-- **Functional programming** design patterns
-- **Enterprise data warehouse** with staging, intermediate, and marts layers
-- **Production orchestration** with scheduling and monitoring
+#### Dataset Support
+1. **Create YAML config** in `configs/datasets/`
+2. **Define validation rules** and output paths
+3. **Update extraction logic** if needed
+4. **Add dbt staging model**
+5. **Register Dagster asset**
 
 ## 🛠️ Core Commands You'll Use
 
