@@ -46,11 +46,19 @@ uv run ruff check .
 # Run tests with coverage
 uv run pytest --cov=src --cov-report=html --cov-report=term
 
-# Run CLI tool commands
+# CLI tool commands - Data Exploration
 uv run python -m src.cli --help
 uv run python -m src.cli explore datasets
 uv run python -m src.cli explore data team_desc --limit 3
 uv run python -m src.cli read data/sample.parquet --info
+
+# CLI tool commands - Production Data Extraction
+uv run python -m src.cli extract --help
+uv run python -m src.cli extract dataset pbp --year 2023
+uv run python -m src.cli extract multiple weekly --years 2020,2021,2022
+uv run python -m src.cli extract incremental pbp --max-age-days 7
+uv run python -m src.cli extract status
+uv run python -m src.cli extract cleanup --max-age-days 30
 
 # Pre-commit hooks
 uv run pre-commit install
@@ -119,13 +127,14 @@ The codebase follows functional programming principles throughout the data pipel
   - `extraction_manager.py`: Incremental extraction and state management (NEW)
 - `configs/`: Dataset extraction configurations
   - `datasets/`: YAML configuration files for all 19 NFL datasets
-- `tests/`: Comprehensive test files for all components (99 test cases)
+- `tests/`: Comprehensive test files for all components (117 test cases)
   - `test_cli.py`: CLI command tests with mocking
   - `test_nfl_explorer.py`: NFLExplorer functionality tests
   - `test_parquet_reader.py`: ParquetReader tests with temporary files
   - `test_config_loader.py`: Configuration system tests
-  - `test_nfl_extractor.py`: Production extraction tests (NEW)
-  - `test_extraction_manager.py`: Incremental extraction tests (NEW)
+  - `test_nfl_extractor.py`: Production extraction tests
+  - `test_extraction_manager.py`: Incremental extraction tests
+  - `test_cli_extract.py`: CLI extraction command tests (NEW)
 - `.pre-commit-config.yaml`: Pre-commit hooks configuration
 - `pyproject.toml`: Project dependencies and tool configurations
 - `README.md`: Complete usage documentation and examples
@@ -134,6 +143,65 @@ The codebase follows functional programming principles throughout the data pipel
 - `dbt/`: dbt models and configurations
 - `dagster/`: Orchestration assets and schedules
 - `ansible/`: Infrastructure as code for deployment
+
+## Enhanced CLI Commands (Phase 2 ✅)
+
+### Production Data Extraction CLI
+The CLI now includes comprehensive `extract` commands for production data extraction:
+
+#### Single Dataset Extraction
+```bash
+# Extract a single dataset for a specific year
+uv run python -m src.cli extract dataset pbp --year 2023
+
+# Extract non-year dataset with validation
+uv run python -m src.cli extract dataset team_desc --verbose
+
+# Extract without saving to disk
+uv run python -m src.cli extract dataset weekly --year 2023 --no-save
+```
+
+#### Multi-Year Extraction
+```bash
+# Extract multiple years at once
+uv run python -m src.cli extract multiple pbp --years 2020,2021,2022,2023
+
+# Multi-year with custom options
+uv run python -m src.cli extract multiple seasonal --years 2018,2019,2020 --verbose
+```
+
+#### Incremental Processing
+```bash
+# Smart incremental extraction (skips current data)
+uv run python -m src.cli extract incremental pbp
+
+# Incremental with specific years and custom age threshold
+uv run python -m src.cli extract incremental weekly --years 2020,2021,2022 --max-age-days 7
+
+# Force refresh all data regardless of age
+uv run python -m src.cli extract incremental schedules --force
+```
+
+#### Status and Management
+```bash
+# Overall extraction status
+uv run python -m src.cli extract status
+
+# Status for specific dataset
+uv run python -m src.cli extract status pbp --verbose
+
+# Cleanup old extractions
+uv run python -m src.cli extract cleanup --max-age-days 30 --verbose
+
+# Dry run cleanup (preview only)
+uv run python -m src.cli extract cleanup --dry-run
+```
+
+**CLI Features:**
+- **Rich Progress Bars**: Visual progress indicators during extraction
+- **Formatted Tables**: Beautiful status reports and extraction summaries
+- **Error Handling**: Comprehensive error messages with verbose debugging
+- **Interactive Output**: Real-time status updates and success confirmations
 
 ## Production Data Extraction (Phase 2 ✅)
 
