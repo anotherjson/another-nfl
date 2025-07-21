@@ -2,9 +2,9 @@
 
 from dagster import Definitions, load_assets_from_modules
 
-from . import assets
-from .resources import duckdb_resource, dbt_resource
-from .schedules import weekly_extraction_schedule, dbt_transformation_schedule
+from nfl_dagster import assets
+from nfl_dagster.resources import duckdb_resource, dbt_resource
+from nfl_dagster.schedules import weekly_extraction_schedule, dbt_transformation_schedule
 
 
 # Load all assets

@@ -76,7 +76,7 @@ dbt/                      # Data warehouse (Phase 3)
   models/intermediate/    # Business logic models
   models/marts/          # Analytics-ready models
 
-dagster/                  # Pipeline orchestration (Phase 3)
+nfl_dagster/              # Pipeline orchestration (Phase 3)
   assets/                # Data assets (raw + dbt)
   resources/             # DuckDB and dbt resources
 
@@ -122,7 +122,7 @@ cd dbt
 dbt deps && dbt run && dbt test
 
 # Dagster pipeline orchestration
-dagster dev -f dagster/definitions.py
+uv run dagster dev -f nfl_dagster/definitions.py
 
 # Materialize specific assets
 dagster asset materialize --asset pbp_data

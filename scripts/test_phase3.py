@@ -46,9 +46,9 @@ def test_phase3_setup():
         (["ls", "dbt/models/marts"], "dbt marts models directory"),
         
         # Dagster tests (Phase 3)
-        (["ls", "dagster/definitions.py"], "Dagster definitions file"),
-        (["ls", "dagster/assets"], "Dagster assets directory"),
-        (["ls", "dagster/schedules.py"], "Dagster schedules file"),
+        (["ls", "nfl_dagster/definitions.py"], "Dagster definitions file"),
+        (["ls", "nfl_dagster/assets"], "Dagster assets directory"),
+        (["ls", "nfl_dagster/schedules.py"], "Dagster schedules file"),
         
         # Configuration system tests
         (["uv", "run", "python", "-c", "from src.config_loader import ConfigLoader; print(f'Datasets: {len(ConfigLoader().list_datasets())}')"], "Configuration system"),
