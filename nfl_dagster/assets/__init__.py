@@ -1,5 +1,6 @@
 from .raw_data_assets import *
 from .dbt_assets import *
+from .ducklake_assets import *
 
 __all__ = [
     "pbp_data",

@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is an NFL data extraction and analysis project that builds a modern data pipeline using Python. The goal is to extract NFL data using the `nfl_data_py` package and create a comprehensive data lake with transformation layers.
 
-**🎉 Project Status: Phase 3 Complete & Fully Operational**
+**🎉 Project Status: Phase 3 Complete + DuckLake Integration**
 
-> **Recent Updates (July 2025):** All critical issues have been resolved and the system is now fully functional as documented. See `FIXES_APPLIED.md` for comprehensive details on improvements made.
+> **Recent Updates (July 2025):** All critical issues have been resolved and the system is now fully functional as documented. **DuckLake lakehouse integration** has been completed, adding time travel, versioning, and ACID transaction capabilities. See `DUCKLAKE_INTEGRATION.md` for complete details on the new lakehouse features.
 
 ## Technology Stack
 
@@ -29,6 +29,7 @@ This is an NFL data extraction and analysis project that builds a modern data pi
 - **dbt Data Warehouse**: Complete dbt project with staging, intermediate, and marts models
 - **Dagster Orchestration**: Production-ready pipeline orchestration with scheduling and monitoring
 - **DuckDB Integration**: High-performance analytical database for transformations
+- **DuckLake Lakehouse**: Time travel, versioning, and ACID transactions with PostgreSQL catalog
 - **Data Quality Testing**: Comprehensive dbt tests and data validation rules
 
 ### Future Implementation (Phase 4+)
@@ -79,6 +80,13 @@ uv run dbt docs generate && uv run dbt docs serve
 uv run dagster dev -f nfl_dagster/definitions.py
 uv run dagster asset materialize --asset pbp_data
 uv run dagster asset materialize --asset dbt_staging_models
+
+# DuckLake commands - Lakehouse Operations (Phase 3+) - ✅ WORKING
+./scripts/postgres_start.sh
+./scripts/postgres_stop.sh
+uv run python scripts/register_existing_data.py
+uv run python scripts/test_ducklake_integration.py
+./scripts/load_env_and_run_dbt.sh run --select stg_team_desc_ducklake
 
 # Phase 3 testing
 uv run python scripts/test_phase3.py
@@ -162,10 +170,12 @@ The codebase follows functional programming principles throughout the data pipel
 - `pyproject.toml`: Project dependencies and tool configurations
 - `README.md`: Complete usage documentation and examples
 
-### Current Structure (Phase 3 ✅ Complete)
-- `dbt/`: ✅ dbt models and configurations (staging models working)
-- `nfl_dagster/`: ✅ Orchestration assets and schedules (webserver operational)
-- `scripts/`: ✅ Validation and testing scripts
+### Current Structure (Phase 3 ✅ Complete + DuckLake Integration)
+- `dbt/`: ✅ dbt models and configurations (staging models + DuckLake integration working)
+- `nfl_dagster/`: ✅ Orchestration assets and schedules (webserver + DuckLake assets operational)
+- `postgres/`: ✅ Local PostgreSQL instance for DuckLake catalog
+- `scripts/`: ✅ Validation, testing, and DuckLake management scripts
+- `DUCKLAKE_INTEGRATION.md`: ✅ Complete DuckLake integration documentation
 - `FIXES_APPLIED.md`: ✅ Documentation of recent system improvements
 
 ### Future Directories (Phase 4+)

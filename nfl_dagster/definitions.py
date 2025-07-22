@@ -4,6 +4,7 @@ from dagster import Definitions, load_assets_from_modules
 
 from nfl_dagster import assets
 from nfl_dagster.resources import duckdb_resource, dbt_resource
+from nfl_dagster.resources.ducklake_resource import ducklake_resource
 # from nfl_dagster.schedules import weekly_extraction_schedule, dbt_transformation_schedule
 
 
@@ -20,5 +21,6 @@ defs = Definitions(
     resources={
         "duckdb": duckdb_resource,
         "dbt": dbt_resource,
+        "ducklake": ducklake_resource,
     },
 )
