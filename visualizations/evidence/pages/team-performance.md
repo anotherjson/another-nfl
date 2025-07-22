@@ -4,6 +4,44 @@ Comprehensive analysis of NFL team performance using Expected Points Added (EPA)
 
 ---
 
+## Executive Summary
+
+```sql team_overview
+SELECT 
+    COUNT(DISTINCT team) as total_teams,
+    COUNT(DISTINCT week) as weeks_analyzed,
+    ROUND(AVG(total_epa), 3) as league_avg_epa,
+    ROUND(MAX(total_epa) - MIN(total_epa), 3) as epa_range,
+    MAX(week) as latest_week
+FROM mart_weekly_team_stats
+WHERE season = 2023
+```
+
+<div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+    <div class="bg-blue-50 p-6 rounded-lg text-center">
+        <h3 class="text-3xl font-bold text-blue-600">{team_overview[0].total_teams}</h3>
+        <p class="text-gray-600">NFL Teams</p>
+    </div>
+    <div class="bg-green-50 p-6 rounded-lg text-center">
+        <h3 class="text-3xl font-bold text-green-600">{team_overview[0].weeks_analyzed}</h3>
+        <p class="text-gray-600">Weeks Analyzed</p>
+    </div>
+    <div class="bg-orange-50 p-6 rounded-lg text-center">
+        <h3 class="text-3xl font-bold text-orange-600">{team_overview[0].league_avg_epa}</h3>
+        <p class="text-gray-600">League Avg EPA</p>
+    </div>
+    <div class="bg-purple-50 p-6 rounded-lg text-center">
+        <h3 class="text-3xl font-bold text-purple-600">{team_overview[0].epa_range}</h3>
+        <p class="text-gray-600">EPA Range</p>
+    </div>
+    <div class="bg-red-50 p-6 rounded-lg text-center">
+        <h3 class="text-3xl font-bold text-red-600">{team_overview[0].latest_week}</h3>
+        <p class="text-gray-600">Latest Week</p>
+    </div>
+</div>
+
+---
+
 ## EPA Rankings
 
 ```sql team_rankings

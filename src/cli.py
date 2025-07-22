@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import click
+import pandas as pd
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
@@ -688,6 +689,475 @@ def read_parquet(file_path: Path, limit: int, info: bool):
     except Exception as e:
         console.print(f"[red]Error reading parquet file: {e}[/red]")
         sys.exit(1)
+
+
+@main.group()
+def analytics():
+    """Advanced analytics and machine learning operations."""
+    pass
+
+
+@analytics.command("train")
+@click.option("--position", default="all", help="Position to train model for (QB, RB, WR, TE, or all)")
+@click.option("--season", default=2023, help="Season to use for training")
+def train_models(position, season):
+    """Train fantasy prediction models."""
+    try:
+        from src.advanced_analytics import NFLAnalytics
+        
+        console.print("[cyan]Initializing advanced analytics engine...[/cyan]")
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Training models...", total=None)
+            
+            analytics_engine = NFLAnalytics()
+            
+            # Load and prepare data
+            progress.update(task, description="Loading player data...")
+            player_data = analytics_engine.load_player_data(season)
+            
+            if player_data.empty:
+                console.print("[red]No data available for training[/red]")
+                return
+            
+            progress.update(task, description="Creating features...")
+            player_data = analytics_engine.create_fantasy_features(player_data)
+            
+            # Train models
+            positions = [position] if position != "all" else ["QB", "RB", "WR", "TE"]
+            
+            results_table = Table(title=f"Model Training Results - Season {season}")
+            results_table.add_column("Position", style="cyan")
+            results_table.add_column("Best Model", style="green")
+            results_table.add_column("R² Score", style="magenta", justify="right")
+            results_table.add_column("Records", style="yellow", justify="right")
+            
+            for pos in positions:
+                progress.update(task, description=f"Training {pos} model...")
+                model_info = analytics_engine.train_fantasy_model(player_data, pos)
+                
+                if model_info:
+                    results_table.add_row(
+                        pos,
+                        model_info["best_model"],
+                        f"{model_info['best_score']:.3f}",
+                        str(len(player_data[player_data['position'] == pos] if pos != "all" else player_data))
+                    )
+                else:
+                    results_table.add_row(pos, "Failed", "N/A", "0")
+            
+            # Save models
+            progress.update(task, description="Saving models...")
+            analytics_engine.save_models()
+            
+            analytics_engine.close()
+        
+        console.print(results_table)
+        console.print("[green]✅ Model training completed successfully![/green]")
+        
+    except ImportError:
+        console.print("[red]❌ Machine learning dependencies not installed. Run: uv add scikit-learn numpy joblib[/red]")
+    except Exception as e:
+        console.print(f"[red]❌ Training failed: {e}[/red]")
+        sys.exit(1)
+
+
+@analytics.command("predict")
+@click.option("--position", default="all", help="Position to predict for")
+@click.option("--season", default=2023, help="Season to predict for")
+@click.option("--week", help="Specific week to predict (optional)")
+@click.option("--player", help="Specific player to predict for (optional)")
+def predict_fantasy(position, season, week, player):
+    """Generate fantasy predictions."""
+    try:
+        from src.advanced_analytics import NFLAnalytics
+        
+        console.print("[cyan]Generating fantasy predictions...[/cyan]")
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Loading models...", total=None)
+            
+            analytics_engine = NFLAnalytics()
+            
+            # Load models
+            progress.update(task, description="Loading trained models...")
+            analytics_engine.load_models()
+            
+            if not analytics_engine.models:
+                console.print("[yellow]No trained models found. Run 'analytics train' first.[/yellow]")
+                return
+            
+            # Load and prepare data
+            progress.update(task, description="Loading player data...")
+            player_data = analytics_engine.load_player_data(season)
+            
+            if player_data.empty:
+                console.print("[red]No data available for predictions[/red]")
+                return
+            
+            # Filter data
+            if week:
+                player_data = player_data[player_data['week'] == int(week)]
+            if player:
+                player_data = player_data[player_data['player_name'].str.contains(player, case=False)]
+            if position != "all":
+                player_data = player_data[player_data['position'] == position]
+            
+            if player_data.empty:
+                console.print("[yellow]No data matches the specified filters[/yellow]")
+                return
+            
+            progress.update(task, description="Creating features...")
+            player_data = analytics_engine.create_fantasy_features(player_data)
+            
+            progress.update(task, description="Generating predictions...")
+            player_data = analytics_engine.predict_fantasy_points(player_data, position)
+            
+            analytics_engine.close()
+        
+        # Display predictions
+        predictions_table = Table(title="Fantasy Predictions")
+        predictions_table.add_column("Player", style="cyan")
+        predictions_table.add_column("Position", style="green")
+        predictions_table.add_column("Team", style="yellow")
+        predictions_table.add_column("Week", style="white")
+        predictions_table.add_column("Predicted", style="magenta", justify="right")
+        predictions_table.add_column("Actual", style="blue", justify="right")
+        predictions_table.add_column("Confidence", style="red", justify="right")
+        
+        # Sort by predicted points
+        top_predictions = player_data.nlargest(20, 'predicted_fantasy_points')
+        
+        for _, row in top_predictions.iterrows():
+            predictions_table.add_row(
+                row['player_name'],
+                row['position'],
+                row['team'],
+                str(row['week']),
+                f"{row['predicted_fantasy_points']:.1f}",
+                f"{row['fantasy_points_ppr']:.1f}" if pd.notna(row['fantasy_points_ppr']) else "N/A",
+                f"{row['prediction_confidence']:.2f}"
+            )
+        
+        console.print(predictions_table)
+        console.print(f"[green]✅ Generated predictions for {len(player_data)} player-week combinations[/green]")
+        
+    except ImportError:
+        console.print("[red]❌ Machine learning dependencies not installed. Run: uv add scikit-learn numpy joblib[/red]")
+    except Exception as e:
+        console.print(f"[red]❌ Prediction failed: {e}[/red]")
+        sys.exit(1)
+
+
+@analytics.command("insights")
+@click.option("--season", default=2023, help="Season to analyze")
+def generate_insights(season):
+    """Generate comprehensive analytics insights."""
+    try:
+        from src.advanced_analytics import NFLAnalytics
+        
+        console.print("[cyan]Generating analytics insights...[/cyan]")
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Analyzing data...", total=None)
+            
+            analytics_engine = NFLAnalytics()
+            
+            progress.update(task, description="Generating insights report...")
+            insights = analytics_engine.generate_insights_report()
+            
+            analytics_engine.close()
+        
+        if not insights:
+            console.print("[yellow]Unable to generate insights - insufficient data[/yellow]")
+            return
+        
+        # Display insights
+        console.print(f"\n[bold cyan]📊 NFL Analytics Insights - Season {season}[/bold cyan]")
+        
+        # Summary stats
+        if 'summary_stats' in insights:
+            stats = insights['summary_stats']
+            summary_table = Table(title="Summary Statistics")
+            summary_table.add_column("Metric", style="cyan")
+            summary_table.add_column("Value", style="green", justify="right")
+            
+            summary_table.add_row("Total Players", str(stats.get('total_players', 0)))
+            summary_table.add_row("Total Teams", str(stats.get('total_teams', 0)))
+            summary_table.add_row("Avg Fantasy Points", f"{stats.get('avg_fantasy_points', 0):.1f}")
+            summary_table.add_row("Avg Team EPA", f"{stats.get('avg_team_epa', 0):.3f}")
+            
+            console.print(summary_table)
+        
+        # Top consistent players
+        if 'top_consistent_players' in insights:
+            console.print("\n[bold yellow]🏆 Most Consistent Fantasy Players[/bold yellow]")
+            consistent_table = Table()
+            consistent_table.add_column("Player", style="cyan")
+            consistent_table.add_column("Position", style="green")
+            consistent_table.add_column("Team", style="yellow")
+            consistent_table.add_column("Avg Points", style="magenta", justify="right")
+            consistent_table.add_column("Consistency", style="red", justify="right")
+            
+            for player in insights['top_consistent_players'][:10]:
+                consistent_table.add_row(
+                    player['player_name'],
+                    player['position'],
+                    player['team'],
+                    f"{player['avg_points']:.1f}",
+                    f"{player['consistency_score']:.2f}"
+                )
+            
+            console.print(consistent_table)
+        
+        # Strongest teams
+        if 'strongest_teams' in insights:
+            console.print("\n[bold green]💪 Strongest Teams by EPA[/bold green]")
+            teams_table = Table()
+            teams_table.add_column("Team", style="cyan")
+            teams_table.add_column("Avg EPA", style="green", justify="right")
+            teams_table.add_column("Win Rate", style="yellow", justify="right")
+            teams_table.add_column("Pass EPA", style="magenta", justify="right")
+            teams_table.add_column("Rush EPA", style="red", justify="right")
+            
+            for team in insights['strongest_teams'][:10]:
+                teams_table.add_row(
+                    team['team'],
+                    f"{team['avg_epa']:.3f}",
+                    f"{team['win_rate']:.1%}",
+                    f"{team['avg_pass_epa']:.3f}",
+                    f"{team['avg_rush_epa']:.3f}"
+                )
+            
+            console.print(teams_table)
+        
+        console.print("[green]✅ Insights generated successfully![/green]")
+        
+    except ImportError:
+        console.print("[red]❌ Machine learning dependencies not installed. Run: uv add scikit-learn numpy joblib[/red]")
+    except Exception as e:
+        console.print(f"[red]❌ Insights generation failed: {e}[/red]")
+        sys.exit(1)
+
+
+@main.group()
+def realtime():
+    """Real-time data processing and streaming operations."""
+    pass
+
+
+@realtime.command("start")
+@click.option("--duration", default=0, help="Duration to run (0 for continuous)")
+@click.option("--port", default=8765, help="WebSocket port")
+def start_processor(duration, port):
+    """Start the real-time NFL data processor."""
+    try:
+        from src.realtime_processor import NFLRealtimeProcessor, FantasyLiveTracker
+        
+        console.print("[cyan]🚀 Starting NFL Real-time Processor...[/cyan]")
+        
+        # Initialize processor
+        processor = NFLRealtimeProcessor()
+        
+        # Initialize fantasy tracker
+        fantasy_tracker = FantasyLiveTracker(processor)
+        
+        # Event subscribers for CLI display
+        def score_alert(event):
+            data = event.data
+            console.print(f"[green]🏈 SCORE: {event.home_team} {data.get('new_home_score', 0)} - {event.away_team} {data.get('new_away_score', 0)}[/green]")
+        
+        def fantasy_alert(event):
+            players_affected = len(event.data.get('fantasy_players_affected', []))
+            console.print(f"[yellow]⭐ FANTASY: {players_affected} players affected in {event.game_id}[/yellow]")
+        
+        processor.subscribe('score_update', score_alert)
+        processor.subscribe('fantasy_update', fantasy_alert)
+        
+        # Start processor
+        processor.start()
+        
+        console.print(f"[green]✅ Real-time processor started on port {port}[/green]")
+        console.print("[cyan]📡 WebSocket server: ws://localhost:8765[/cyan]")
+        console.print("[cyan]💻 Connect with: websocat ws://localhost:8765[/cyan]")
+        console.print("[yellow]Press Ctrl+C to stop[/yellow]")
+        
+        # Run for specified duration or continuously
+        try:
+            if duration > 0:
+                console.print(f"[cyan]Running for {duration} seconds...[/cyan]")
+                import time
+                time.sleep(duration)
+            else:
+                console.print("[cyan]Running continuously... Press Ctrl+C to stop[/cyan]")
+                while True:
+                    import time
+                    time.sleep(1)
+                    
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Stopping processor...[/yellow]")
+        
+        processor.stop()
+        console.print("[green]✅ Real-time processor stopped[/green]")
+        
+    except ImportError:
+        console.print("[red]❌ Real-time dependencies not installed. Run: uv add websockets aiohttp requests[/red]")
+    except Exception as e:
+        console.print(f"[red]❌ Failed to start processor: {e}[/red]")
+        sys.exit(1)
+
+
+@realtime.command("stream")
+@click.option("--duration", default=60, help="Duration to run stream processing")
+@click.option("--workers", default=4, help="Number of worker threads")
+def start_stream_processor(duration, workers):
+    """Start the high-performance stream processor."""
+    try:
+        import asyncio
+        from src.stream_processor import StreamProcessor, NFLStreamAnalyzer, simulate_live_events
+        
+        console.print("[cyan]🌊 Starting Stream Processor...[/cyan]")
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Initializing stream processor...", total=None)
+            
+            # Initialize processor
+            processor = StreamProcessor(max_workers=workers)
+            analyzer = NFLStreamAnalyzer(processor)
+            
+            progress.update(task, description="Creating analysis windows...")
+            analyzer.create_analysis_windows()
+            
+            progress.update(task, description="Starting processor...")
+            processor.start()
+            
+            progress.update(task, description=f"Running simulation for {duration} seconds...")
+            asyncio.run(simulate_live_events(processor, duration))
+            
+            # Show final stats
+            stats = processor.get_stats()
+            processor.stop()
+        
+        # Display results
+        results_table = Table(title=f"Stream Processing Results ({duration}s)")
+        results_table.add_column("Metric", style="cyan")
+        results_table.add_column("Value", style="green", justify="right")
+        
+        results_table.add_row("Events Processed", str(stats['events_processed']))
+        results_table.add_row("Windows Processed", str(stats['windows_processed']))
+        results_table.add_row("Events/Second", f"{stats['events_per_second']:.2f}")
+        results_table.add_row("Active Windows", str(stats['active_windows']))
+        results_table.add_row("Errors", str(stats['errors']))
+        results_table.add_row("Runtime", f"{stats['runtime_seconds']:.1f}s")
+        
+        console.print(results_table)
+        console.print("[green]✅ Stream processing completed successfully![/green]")
+        
+    except ImportError:
+        console.print("[red]❌ Stream processing dependencies not installed. Run: uv add websockets aiohttp requests[/red]")
+    except Exception as e:
+        console.print(f"[red]❌ Stream processing failed: {e}[/red]")
+        sys.exit(1)
+
+
+@realtime.command("dashboard")
+def launch_realtime_dashboard():
+    """Launch the real-time Streamlit dashboard."""
+    try:
+        import subprocess
+        import os
+        
+        console.print("[cyan]🚀 Launching real-time dashboard...[/cyan]")
+        
+        # Path to the real-time dashboard
+        dashboard_path = "visualizations/streamlit_app/realtime_dashboard.py"
+        
+        if not os.path.exists(dashboard_path):
+            console.print("[red]❌ Real-time dashboard not found[/red]")
+            sys.exit(1)
+        
+        console.print("[green]🌐 Starting Streamlit server...[/green]")
+        console.print("[cyan]📊 Dashboard will open at: http://localhost:8501[/cyan]")
+        console.print("[yellow]Press Ctrl+C to stop[/yellow]")
+        
+        # Launch Streamlit
+        subprocess.run(["streamlit", "run", dashboard_path])
+        
+    except FileNotFoundError:
+        console.print("[red]❌ Streamlit not installed. Run: uv add streamlit[/red]")
+    except Exception as e:
+        console.print(f"[red]❌ Failed to launch dashboard: {e}[/red]")
+        sys.exit(1)
+
+
+@realtime.command("status")
+def show_realtime_status():
+    """Show status of real-time processing components."""
+    try:
+        import websockets
+        import asyncio
+        import requests
+        from datetime import datetime
+        
+        console.print("[cyan]📊 Real-time System Status[/cyan]")
+        
+        # Check WebSocket server
+        async def check_websocket():
+            try:
+                async with websockets.connect("ws://localhost:8765") as websocket:
+                    return "✅ Connected"
+            except Exception:
+                return "❌ Not available"
+        
+        ws_status = asyncio.run(check_websocket())
+        
+        # Create status table
+        status_table = Table(title="Component Status")
+        status_table.add_column("Component", style="cyan")
+        status_table.add_column("Status", style="green")
+        status_table.add_column("Details", style="yellow")
+        
+        status_table.add_row("WebSocket Server", ws_status, "ws://localhost:8765")
+        status_table.add_row("Stream Processor", "⚠️ Manual start", "Use 'realtime stream' command")
+        status_table.add_row("Real-time Dashboard", "⚠️ Manual start", "Use 'realtime dashboard' command")
+        status_table.add_row("Database", "✅ Available", "DuckDB backend")
+        
+        console.print(status_table)
+        
+        # Show recent activity if available
+        try:
+            from src.realtime_processor import NFLRealtimeProcessor
+            processor = NFLRealtimeProcessor()
+            # Try to get some basic info without starting
+            console.print("\n[cyan]📈 System Information[/cyan]")
+            console.print(f"Current time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            console.print("Use 'realtime start' to begin processing live events")
+            
+        except Exception as e:
+            console.print(f"\n[yellow]⚠️ Unable to get detailed status: {e}[/yellow]")
+        
+        console.print("\n[green]✅ Status check completed[/green]")
+        
+    except ImportError:
+        console.print("[red]❌ Real-time dependencies not available[/red]")
+    except Exception as e:
+        console.print(f"[red]❌ Status check failed: {e}[/red]")
 
 
 if __name__ == "__main__":

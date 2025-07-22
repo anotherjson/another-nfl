@@ -222,6 +222,58 @@ services:
       - nfl_network
     restart: unless-stopped
 
+  # Real-time Processor Service
+  realtime-processor:
+    build:
+      context: .
+      dockerfile: docker/nfl-extractor/Dockerfile
+    container_name: nfl-realtime
+    environment:
+      - NFL_DATA_PATH=/opt/nfl-data
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER:-nfl_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-nfl_secure_password}
+      - POSTGRES_DB=nfl_platform
+    volumes:
+      - nfl_data:/opt/nfl-data
+    ports:
+      - "8765:8765"  # WebSocket server
+    networks:
+      - nfl_network
+    restart: unless-stopped
+    command: ["python", "-m", "src.realtime_processor"]
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import socket; s=socket.socket(); s.connect((\"localhost\", 8765)); s.close()'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Real-time Streamlit Dashboard
+  realtime-dashboard:
+    build:
+      context: .
+      dockerfile: docker/streamlit-app/Dockerfile
+    container_name: nfl-realtime-dashboard
+    environment:
+      - NFL_DATA_PATH=/opt/nfl-data
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER:-nfl_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-nfl_secure_password}
+      - POSTGRES_DB=nfl_platform
+      - WEBSOCKET_URI=ws://realtime-processor:8765
+    volumes:
+      - nfl_data:/opt/nfl-data:ro
+    ports:
+      - "8502:8501"  # Different port for real-time dashboard
+    networks:
+      - nfl_network
+    restart: unless-stopped
+    command: ["streamlit", "run", "visualizations/streamlit_app/realtime_dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    depends_on:
+      - realtime-processor
+
 volumes:
   postgres_data:
     driver: local
