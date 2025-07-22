@@ -279,10 +279,9 @@ If all the above work, the system is functioning correctly.
 
 ## 📖 Need More Info?
 
-- **NEW_CLAUDE_GUIDE.md** - Comprehensive onboarding for new instances
+- **NEW_CLAUDE_ONBOARDING.md** - Comprehensive onboarding for new contributors
 - **CLAUDE.md** - Complete technical reference
-- **README.md** - User-facing documentation  
-- **ONBOARDING.md** - Detailed development patterns
+- **README.md** - User-facing documentation
 - **TROUBLESHOOTING.md** - Problem-solving guide
 
 ## Key Reminders
