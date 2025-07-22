@@ -16,12 +16,7 @@ class DbtResource(ConfigurableResource):
         """Run a dbt command and return the result."""
         logger = get_dagster_logger()
         
-        full_command = [
-            "dbt",
-            "--project-dir", self.project_dir,
-            "--profiles-dir", self.profiles_dir,
-            "--target", self.target,
-        ] + command
+        full_command = ["uv", "run", "dbt"] + command
         
         logger.info(f"Running dbt command: {' '.join(full_command)}")
         
@@ -31,7 +26,7 @@ class DbtResource(ConfigurableResource):
                 capture_output=True,
                 text=True,
                 check=True,
-                cwd=Path(__file__).parent.parent.parent  # Project root
+                cwd=Path(__file__).parent.parent.parent / "dbt"  # dbt directory
             )
             
             logger.info(f"dbt command succeeded: {result.stdout}")

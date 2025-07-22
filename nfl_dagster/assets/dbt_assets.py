@@ -1,7 +1,6 @@
 """dbt model assets for the NFL analytics pipeline."""
 
-from dagster import asset, AssetExecutionContext, get_dagster_logger, DependsOn
-from dagster._core.definitions.decorators.asset_decorator import multi_asset, AssetOut
+from dagster import asset, AssetExecutionContext, get_dagster_logger, multi_asset, AssetOut
 from ..resources.dbt_resource import DbtResource
 
 
@@ -12,15 +11,10 @@ from ..resources.dbt_resource import DbtResource
         "stg_team_desc": AssetOut(description="Staged team descriptions"),
         "stg_schedules": AssetOut(description="Staged game schedules"),
     },
-    deps=[
-        DependsOn("pbp_data"),
-        DependsOn("weekly_data"), 
-        DependsOn("team_desc_data"),
-        DependsOn("schedules_data"),
-    ],
+    deps=["pbp_data", "weekly_data", "team_desc_data", "schedules_data"],
     group_name="dbt_staging"
 )
-def dbt_staging_models(context: AssetExecutionContext, dbt: DbtResource) -> dict:
+def dbt_staging_models(context: AssetExecutionContext, dbt: DbtResource):
     """Run all dbt staging models."""
     logger = get_dagster_logger()
     
@@ -37,11 +31,12 @@ def dbt_staging_models(context: AssetExecutionContext, dbt: DbtResource) -> dict
     if not test_result["success"]:
         logger.warning(f"Some staging tests failed: {test_result['stderr']}")
     
-    return {
-        "run_result": result,
-        "test_result": test_result,
-        "models_built": ["stg_pbp", "stg_weekly", "stg_team_desc", "stg_schedules"]
-    }
+    return (
+        {"run_result": result, "models_built": ["stg_pbp"]},
+        {"run_result": result, "models_built": ["stg_weekly"]}, 
+        {"run_result": result, "models_built": ["stg_team_desc"]},
+        {"run_result": result, "models_built": ["stg_schedules"]}
+    )
 
 
 @multi_asset(
@@ -49,15 +44,10 @@ def dbt_staging_models(context: AssetExecutionContext, dbt: DbtResource) -> dict
         "int_team_performance": AssetOut(description="Team performance metrics"),
         "int_player_weekly_stats": AssetOut(description="Weekly player statistics with rankings"),
     },
-    deps=[
-        DependsOn("stg_pbp"),
-        DependsOn("stg_weekly"),
-        DependsOn("stg_team_desc"),
-        DependsOn("stg_schedules"),
-    ],
+    deps=["stg_pbp", "stg_weekly", "stg_team_desc", "stg_schedules"],
     group_name="dbt_intermediate"
 )
-def dbt_intermediate_models(context: AssetExecutionContext, dbt: DbtResource) -> dict:
+def dbt_intermediate_models(context: AssetExecutionContext, dbt: DbtResource):
     """Run all dbt intermediate models."""
     logger = get_dagster_logger()
     
@@ -74,11 +64,10 @@ def dbt_intermediate_models(context: AssetExecutionContext, dbt: DbtResource) ->
     if not test_result["success"]:
         logger.warning(f"Some intermediate tests failed: {test_result['stderr']}")
     
-    return {
-        "run_result": result,
-        "test_result": test_result,
-        "models_built": ["int_team_performance", "int_player_weekly_stats"]
-    }
+    return (
+        {"run_result": result, "models_built": ["int_team_performance"]},
+        {"run_result": result, "models_built": ["int_player_weekly_stats"]}
+    )
 
 
 @multi_asset(
@@ -87,13 +76,10 @@ def dbt_intermediate_models(context: AssetExecutionContext, dbt: DbtResource) ->
         "mart_player_season_stats": AssetOut(description="Season player statistics for analytics"),
         "mart_game_results": AssetOut(description="Game results and matchup analysis"),
     },
-    deps=[
-        DependsOn("int_team_performance"),
-        DependsOn("int_player_weekly_stats"),
-    ],
+    deps=["int_team_performance", "int_player_weekly_stats"],
     group_name="dbt_marts"
 )
-def dbt_marts_models(context: AssetExecutionContext, dbt: DbtResource) -> dict:
+def dbt_marts_models(context: AssetExecutionContext, dbt: DbtResource):
     """Run all dbt marts models."""
     logger = get_dagster_logger()
     
@@ -114,9 +100,8 @@ def dbt_marts_models(context: AssetExecutionContext, dbt: DbtResource) -> dict:
     logger.info("Generating dbt documentation")
     docs_result = dbt.docs_generate()
     
-    return {
-        "run_result": result,
-        "test_result": test_result,
-        "docs_result": docs_result,
-        "models_built": ["mart_weekly_team_stats", "mart_player_season_stats", "mart_game_results"]
-    }
+    return (
+        {"run_result": result, "models_built": ["mart_weekly_team_stats"]},
+        {"run_result": result, "models_built": ["mart_player_season_stats"]},
+        {"run_result": result, "models_built": ["mart_game_results"]}
+    )
