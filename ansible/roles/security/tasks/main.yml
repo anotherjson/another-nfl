@@ -1,0 +1,204 @@
+---
+# Security hardening role for NFL Platform
+
+- name: Update all packages
+  package:
+    name: "*"
+    state: latest
+  when: automatic_updates | default(true)
+
+- name: Install security packages
+  package:
+    name:
+      - fail2ban
+      - ufw
+      - unattended-upgrades
+      - aide
+      - rkhunter
+      - logwatch
+    state: present
+
+- name: Configure automatic security updates
+  template:
+    src: 50unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    mode: '0644'
+  when: ansible_os_family == "Debian"
+
+- name: Configure UFW firewall
+  block:
+    - name: Reset UFW to defaults
+      ufw:
+        state: reset
+      
+    - name: Set UFW default policies
+      ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - direction: incoming
+          policy: deny
+        - direction: outgoing
+          policy: allow
+        - direction: routed
+          policy: deny
+    
+    - name: Configure UFW rules
+      ufw:
+        rule: "{{ item.rule }}"
+        port: "{{ item.port }}"
+        proto: "{{ item.proto | default('tcp') }}"
+        src: "{{ item.src | default('any') }}"
+        comment: "{{ item.comment | default('') }}"
+      loop: "{{ firewall_rules }}"
+      when: firewall_rules is defined
+    
+    - name: Enable UFW
+      ufw:
+        state: enabled
+  when: ufw_enabled | default(true)
+
+- name: Configure Fail2Ban
+  block:
+    - name: Create Fail2Ban jail.local
+      template:
+        src: jail.local.j2
+        dest: /etc/fail2ban/jail.local
+        mode: '0644'
+      notify: restart fail2ban
+    
+    - name: Create custom NFL Platform filter
+      template:
+        src: nfl-platform.conf.j2
+        dest: /etc/fail2ban/filter.d/nfl-platform.conf
+        mode: '0644'
+      notify: restart fail2ban
+    
+    - name: Start and enable Fail2Ban
+      systemd:
+        name: fail2ban
+        state: started
+        enabled: yes
+  when: fail2ban_enabled | default(true)
+
+- name: Secure SSH configuration
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    mode: '0644'
+    backup: yes
+  notify: restart ssh
+
+- name: Create security limits
+  template:
+    src: security-limits.conf.j2
+    dest: /etc/security/limits.d/99-nfl-platform.conf
+    mode: '0644'
+
+- name: Configure kernel security parameters
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop:
+    - name: net.ipv4.ip_forward
+      value: 0
+    - name: net.ipv4.conf.all.send_redirects
+      value: 0
+    - name: net.ipv4.conf.default.send_redirects
+      value: 0
+    - name: net.ipv4.conf.all.accept_redirects
+      value: 0
+    - name: net.ipv4.conf.default.accept_redirects
+      value: 0
+    - name: net.ipv4.conf.all.secure_redirects
+      value: 0
+    - name: net.ipv4.conf.default.secure_redirects
+      value: 0
+    - name: net.ipv4.conf.all.log_martians
+      value: 1
+    - name: net.ipv4.conf.default.log_martians
+      value: 1
+    - name: net.ipv4.icmp_echo_ignore_broadcasts
+      value: 1
+    - name: net.ipv4.icmp_ignore_bogus_error_responses
+      value: 1
+    - name: net.ipv4.tcp_syncookies
+      value: 1
+    - name: kernel.dmesg_restrict
+      value: 1
+
+- name: Set up intrusion detection
+  block:
+    - name: Initialize AIDE database
+      command: aide --init
+      args:
+        creates: /var/lib/aide/aide.db.new
+    
+    - name: Move AIDE database
+      command: mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+      args:
+        creates: /var/lib/aide/aide.db
+    
+    - name: Schedule AIDE checks
+      cron:
+        name: "AIDE integrity check"
+        minute: "0"
+        hour: "3"
+        job: "/usr/bin/aide --check"
+        user: root
+
+- name: Configure log monitoring
+  block:
+    - name: Install logwatch configuration
+      template:
+        src: logwatch.conf.j2
+        dest: /etc/logwatch/conf/logwatch.conf
+        mode: '0644'
+    
+    - name: Schedule logwatch reports
+      cron:
+        name: "Daily logwatch report"
+        minute: "0"
+        hour: "6"
+        job: "/usr/sbin/logwatch --output mail --mailto {{ admin_email | default('admin@localhost') }} --detail high"
+        user: root
+      when: admin_email is defined
+
+- name: Create security user for NFL Platform
+  user:
+    name: "{{ nfl_app_user }}"
+    group: "{{ nfl_app_group }}"
+    shell: /bin/bash
+    home: "/home/{{ nfl_app_user }}"
+    create_home: yes
+    system: no
+    password: "!"  # Locked account, SSH key access only
+
+- name: Set up SSH key access
+  authorized_key:
+    user: "{{ nfl_app_user }}"
+    key: "{{ item }}"
+    state: present
+  loop: "{{ nfl_ssh_public_keys }}"
+  when: nfl_ssh_public_keys is defined
+
+- name: Create security audit log
+  file:
+    path: /var/log/nfl-security-audit.log
+    state: touch
+    owner: root
+    group: adm
+    mode: '0640'
+
+handlers:
+  - name: restart fail2ban
+    systemd:
+      name: fail2ban
+      state: restarted
+  
+  - name: restart ssh
+    systemd:
+      name: ssh
+      state: restarted

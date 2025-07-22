@@ -1,0 +1,110 @@
+# Prometheus configuration for NFL Platform monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'nfl-platform-prod'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "rules/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node Exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets:
+        - 'nfl-app-01:9100'
+        - 'nfl-app-02:9100'
+        - 'nfl-app-03:9100'
+        - 'nfl-db-01:9100'
+        - 'nfl-db-02:9100'
+        - 'nfl-lb-01:9100'
+        - 'nfl-monitor-01:9100'
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Docker container metrics
+  - job_name: 'docker'
+    static_configs:
+      - targets:
+        - 'nfl-app-01:9323'
+        - 'nfl-app-02:9323'
+        - 'nfl-app-03:9323'
+    scrape_interval: 30s
+
+  # PostgreSQL metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets:
+        - 'nfl-db-01:9187'
+        - 'nfl-db-02:9187'
+    scrape_interval: 30s
+
+  # Nginx metrics
+  - job_name: 'nginx'
+    static_configs:
+      - targets:
+        - 'nfl-lb-01:9113'
+    scrape_interval: 30s
+
+  # Dagster metrics (custom application metrics)
+  - job_name: 'dagster'
+    static_configs:
+      - targets:
+        - 'nfl-app-01:3001'  # Dagster metrics endpoint
+        - 'nfl-app-02:3001'
+        - 'nfl-app-03:3001'
+    scrape_interval: 60s
+    metrics_path: /metrics
+
+  # NFL Data Pipeline specific metrics
+  - job_name: 'nfl-pipeline'
+    static_configs:
+      - targets:
+        - 'nfl-app-01:8000'  # Custom NFL extractor metrics
+        - 'nfl-app-02:8000'
+        - 'nfl-app-03:8000'
+    scrape_interval: 60s
+    metrics_path: /metrics
+    scrape_timeout: 30s
+
+  # Blackbox exporter for external endpoint monitoring
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - https://nfl-platform.example.com/health
+        - https://nfl-platform.example.com/dagster/
+        - https://nfl-platform.example.com/grafana/
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+# Remote write configuration for long-term storage (optional)
+# remote_write:
+#   - url: "https://prometheus-remote-write.example.com/write"
+#     basic_auth:
+#       username: "nfl-platform"
+#       password: "secure-password"

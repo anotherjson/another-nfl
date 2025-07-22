@@ -1,0 +1,207 @@
+---
+# NFL Platform Application Deployment Playbook
+
+- name: Deploy NFL Data Platform
+  hosts: nfl_app_servers
+  gather_facts: yes
+  serial: 1  # Deploy one server at a time for zero-downtime
+  
+  vars:
+    deployment_timestamp: "{{ ansible_date_time.epoch }}"
+    deployment_id: "deploy-{{ deployment_timestamp }}"
+    rollback_enabled: true
+    
+  pre_tasks:
+    - name: Create deployment directory
+      file:
+        path: "{{ app_deployment_path }}/releases/{{ deployment_id }}"
+        state: directory
+        owner: "{{ nfl_app_user }}"
+        group: "{{ nfl_app_group }}"
+        mode: '0755'
+        
+    - name: Check if current deployment exists
+      stat:
+        path: "{{ app_deployment_path }}/current"
+      register: current_deployment
+      
+    - name: Backup current deployment for rollback
+      command: >
+        cp -rp {{ app_deployment_path }}/current 
+        {{ app_deployment_path }}/releases/backup-{{ deployment_timestamp }}
+      when: current_deployment.stat.exists and rollback_enabled
+
+  tasks:
+    - name: Clone application repository
+      git:
+        repo: "{{ app_repo_url }}"
+        dest: "{{ app_deployment_path }}/releases/{{ deployment_id }}"
+        version: "{{ app_branch }}"
+        force: yes
+      become_user: "{{ nfl_app_user }}"
+      
+    - name: Copy production configuration files
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ app_deployment_path }}/releases/{{ deployment_id }}/{{ item.dest }}"
+        owner: "{{ nfl_app_user }}"
+        group: "{{ nfl_app_group }}"
+        mode: "{{ item.mode | default('0644') }}"
+      loop:
+        - src: docker-compose.prod.yml.j2
+          dest: docker-compose.prod.yml
+        - src: .env.prod.j2
+          dest: .env
+          mode: '0600'
+        - src: nginx.conf.j2
+          dest: docker/nginx/nginx.conf
+          
+    - name: Build Docker images
+      docker_image:
+        build:
+          path: "{{ app_deployment_path }}/releases/{{ deployment_id }}"
+          dockerfile: "{{ item.dockerfile }}"
+        name: "nfl-platform/{{ item.name }}"
+        tag: "{{ nfl_platform_version }}"
+        source: build
+        force_source: yes
+      loop:
+        - name: extractor
+          dockerfile: docker/nfl-extractor/Dockerfile
+        - name: dbt-runner
+          dockerfile: docker/dbt-runner/Dockerfile
+        - name: dagster-server
+          dockerfile: docker/dagster-server/Dockerfile
+        - name: postgres-ducklake
+          dockerfile: docker/postgres-ducklake/Dockerfile
+      tags: build
+      
+    - name: Stop existing containers (if any)
+      docker_compose:
+        project_src: "{{ app_deployment_path }}/current"
+        files:
+          - docker-compose.yml
+          - docker-compose.prod.yml
+        state: absent
+      when: current_deployment.stat.exists
+      ignore_errors: yes
+      
+    - name: Update symlink to new deployment
+      file:
+        src: "{{ app_deployment_path }}/releases/{{ deployment_id }}"
+        dest: "{{ app_deployment_path }}/current"
+        state: link
+        owner: "{{ nfl_app_user }}"
+        group: "{{ nfl_app_group }}"
+        force: yes
+        
+    - name: Start new deployment
+      docker_compose:
+        project_src: "{{ app_deployment_path }}/current"
+        files:
+          - docker-compose.yml
+          - docker-compose.prod.yml
+        state: present
+        pull: yes
+      environment:
+        POSTGRES_DB: "{{ vault_postgres_db }}"
+        POSTGRES_USER: "{{ vault_postgres_user }}"
+        POSTGRES_PASSWORD: "{{ vault_postgres_password }}"
+        GRAFANA_PASSWORD: "{{ vault_grafana_password }}"
+        DOMAIN: "{{ vault_domain_name }}"
+      tags: deploy
+      
+    - name: Wait for services to be healthy
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}:3000/server_info"
+        method: GET
+        status_code: 200
+      retries: 30
+      delay: 10
+      register: health_check
+      
+    - name: Verify dbt models are accessible
+      docker_container:
+        name: nfl-dbt-test
+        image: "nfl-platform/dbt-runner:{{ nfl_platform_version }}"
+        command: ["uv", "run", "dbt", "compile"]
+        state: started
+        detach: no
+        cleanup: yes
+        volumes:
+          - "{{ nfl_data_path }}:/data"
+      register: dbt_test
+      
+    - name: Run database migrations if needed
+      docker_container:
+        name: nfl-db-migrate
+        image: "nfl-platform/postgres-ducklake:{{ nfl_platform_version }}"
+        command: ["python3", "/opt/nfl-scripts/register_existing_data.py"]
+        state: started
+        detach: no
+        cleanup: yes
+        volumes:
+          - "{{ nfl_data_path }}:/opt/nfl-data"
+        env:
+          POSTGRES_HOST: postgres
+          POSTGRES_DB: "{{ vault_postgres_db }}"
+          POSTGRES_USER: "{{ vault_postgres_user }}"
+          POSTGRES_PASSWORD: "{{ vault_postgres_password }}"
+      when: server_role == "primary"
+      
+  post_tasks:
+    - name: Clean up old deployments
+      shell: >
+        ls -1t {{ app_deployment_path }}/releases/ | 
+        tail -n +6 | 
+        xargs -I {} rm -rf {{ app_deployment_path }}/releases/{}
+      args:
+        executable: /bin/bash
+      when: server_role == "primary"
+      
+    - name: Send deployment notification
+      uri:
+        url: "{{ vault_slack_webhook_url | default('') }}"
+        method: POST
+        body_format: json
+        body:
+          text: |
+            🚀 NFL Platform deployed successfully!
+            
+            **Environment:** {{ environment }}
+            **Version:** {{ nfl_platform_version }}
+            **Host:** {{ inventory_hostname }}
+            **Deployment ID:** {{ deployment_id }}
+            **Status:** ✅ Healthy
+            
+            **Services:**
+            - Dagster UI: https://{{ vault_domain_name }}/dagster/
+            - Grafana: https://{{ vault_domain_name }}/grafana/
+      when: vault_slack_webhook_url is defined
+      ignore_errors: yes
+
+  handlers:
+    - name: rollback deployment
+      block:
+        - name: Stop failed deployment
+          docker_compose:
+            project_src: "{{ app_deployment_path }}/current"
+            state: absent
+          ignore_errors: yes
+          
+        - name: Restore previous deployment
+          file:
+            src: "{{ app_deployment_path }}/releases/backup-{{ deployment_timestamp }}"
+            dest: "{{ app_deployment_path }}/current"
+            state: link
+            force: yes
+          when: rollback_enabled and current_deployment.stat.exists
+          
+        - name: Start rollback deployment
+          docker_compose:
+            project_src: "{{ app_deployment_path }}/current"
+            files:
+              - docker-compose.yml
+              - docker-compose.prod.yml
+            state: present
+          when: rollback_enabled and current_deployment.stat.exists

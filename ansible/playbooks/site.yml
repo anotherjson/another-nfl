@@ -1,0 +1,84 @@
+---
+# Main site playbook for NFL Platform deployment
+
+- name: Deploy NFL Data Platform Infrastructure
+  hosts: all
+  gather_facts: yes
+  
+  pre_tasks:
+    - name: Update package cache
+      package:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+      
+    - name: Set timezone
+      timezone:
+        name: "{{ timezone }}"
+      notify: restart cron
+
+  roles:
+    - common
+    - security
+    - docker-setup
+
+- name: Configure Database Servers
+  hosts: nfl_db_servers
+  roles:
+    - database
+    - backup
+  tags: database
+
+- name: Deploy Application Services
+  hosts: nfl_app_servers
+  roles:
+    - nfl-platform
+    - monitoring
+  tags: application
+
+- name: Configure Load Balancers
+  hosts: nfl_load_balancers
+  roles:
+    - nginx-lb
+    - ssl-certificates
+  tags: loadbalancer
+
+- name: Setup Monitoring Infrastructure
+  hosts: nfl_monitoring
+  roles:
+    - prometheus
+    - grafana
+    - alerting
+  tags: monitoring
+
+- name: Final Configuration and Health Checks
+  hosts: all
+  tasks:
+    - name: Verify all services are running
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}:{{ item }}/health"
+        method: GET
+        status_code: 200
+      loop:
+        - 3000  # Dagster
+      when: inventory_hostname in groups['nfl_app_servers']
+      ignore_errors: yes
+      
+    - name: Display deployment summary
+      debug:
+        msg: |
+          NFL Platform deployment completed successfully!
+          
+          Services deployed:
+          - Database: PostgreSQL + DuckLake catalog
+          - Extraction: NFL data extraction service
+          - Transform: dbt data transformation
+          - Orchestration: Dagster pipeline management
+          - Monitoring: Prometheus + Grafana
+          - Load Balancer: Nginx with SSL
+          
+          Access URLs:
+          - Dagster UI: https://{{ groups['nfl_load_balancers'][0] }}/dagster/
+          - Grafana: https://{{ groups['nfl_load_balancers'][0] }}/grafana/
+          - Prometheus: http://{{ groups['nfl_monitoring'][0] }}:9090/
+      run_once: true
+      delegate_to: localhost

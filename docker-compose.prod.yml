@@ -1,0 +1,110 @@
+version: '3.8'
+
+# Production override for docker-compose.yml
+services:
+  postgres:
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - /opt/nfl-data/postgres:/var/lib/postgresql/data
+      - /opt/nfl-data/raw:/opt/nfl-data
+      - /opt/nfl-scripts:/opt/nfl-scripts:ro
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  nfl-extractor:
+    environment:
+      - NFL_DATA_PATH=/data
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - LOG_LEVEL=INFO
+    volumes:
+      - /opt/nfl-data/raw:/data
+      - /opt/nfl-logs/extractor:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+
+  dbt-runner:
+    environment:
+      - DBT_TARGET=prod
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - /opt/nfl-data/processed:/data
+      - /opt/nfl-logs/dbt:/app/dbt/logs
+      - /opt/nfl-data/dbt-target:/app/dbt/target
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+
+  dagster-server:
+    environment:
+      - DAGSTER_HOME=/opt/dagster/dagster_home
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - NFL_DATA_PATH=/data
+      - PYTHONPATH=/app
+    volumes:
+      - /opt/nfl-data/processed:/data
+      - /opt/nfl-logs/dagster:/opt/dagster/logs
+      - /opt/nfl-data/dagster-storage:/opt/dagster/storage
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+
+  nginx:
+    volumes:
+      - /opt/nfl-config/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /opt/nfl-config/ssl:/etc/nginx/ssl:ro
+      - /opt/nfl-logs/nginx:/var/log/nginx
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  prometheus:
+    volumes:
+      - /opt/nfl-config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /opt/nfl-data/prometheus:/prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+
+  grafana:
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://${DOMAIN}/grafana/
+    volumes:
+      - /opt/nfl-data/grafana:/var/lib/grafana
+      - /opt/nfl-config/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - /opt/nfl-config/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'

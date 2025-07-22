@@ -50,6 +50,10 @@ A comprehensive, production-grade data warehouse and analytics pipeline for NFL 
 - **Dagster Orchestration**: Webserver operational with asset management and DuckLake integration ✅
 - **DuckLake Lakehouse**: Time travel, versioning, and ACID transactions operational ✅
 - **PostgreSQL Catalog**: Local catalog database managing 10 tables with 62,552 NFL rows ✅
+- **Production Deployment**: Docker containerization with Ansible automation ✅
+- **CI/CD Pipeline**: GitHub Actions with automated testing and deployment ✅
+- **Monitoring Stack**: Prometheus + Grafana with comprehensive alerting ✅
+- **Backup System**: Encrypted S3 backups with restoration capabilities ✅
 - **Testing Infrastructure**: 87% test coverage with comprehensive DuckLake integration tests ✅
 - **Code Quality**: Ruff formatting and linting fully functional ✅
 
@@ -186,6 +190,68 @@ uv run python -m src.cli extract cleanup --max-age-days 30 --verbose
 
 # Dry run cleanup (preview only)
 uv run python -m src.cli extract cleanup --dry-run
+```
+
+### Production Deployment Commands (Phase 4)
+
+#### Docker Development Environment
+
+```bash
+# Start local development environment
+docker-compose up -d
+
+# Start with production overrides
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# View container status and logs
+docker-compose ps
+docker-compose logs -f dagster-server
+
+# Stop all services
+docker-compose down
+
+# Rebuild containers after code changes
+docker-compose build --no-cache
+```
+
+#### Production Deployment with Ansible
+
+```bash
+# Deploy to production (from ansible/ directory)
+cd ansible
+ansible-playbook -i inventories/production/hosts.yml \
+  playbooks/deploy-nfl-platform.yml \
+  --vault-password-file .vault_pass
+
+# Deploy specific components only
+ansible-playbook -i inventories/production/hosts.yml \
+  playbooks/site.yml \
+  --vault-password-file .vault_pass \
+  --tags database,application
+
+# Rolling update with zero downtime
+ansible-playbook -i inventories/production/hosts.yml \
+  playbooks/deploy-nfl-platform.yml \
+  --vault-password-file .vault_pass \
+  --extra-vars "nfl_platform_version=v1.1.0"
+```
+
+#### Production Operations
+
+```bash
+# Run health checks
+./scripts/production-health-check.sh
+
+# Backup system
+./scripts/backup-nfl-data.sh
+
+# Restore from backup
+./scripts/restore-nfl-data.sh --from-s3 nfl-platform-backup-20241220_120000
+
+# System maintenance
+./scripts/maintenance.sh health --verbose
+./scripts/maintenance.sh cleanup --dry-run
+./scripts/maintenance.sh optimize --force
 ```
 
 ### Data Warehouse & Analytics Commands (Phase 3)
@@ -385,6 +451,26 @@ NFL API → CLI Extraction → Parquet Files → DuckLake Catalog Registration
                      Schedules & Monitoring              Time Travel & Versioning
 ```
 
+### Production Architecture
+```
+                    Internet
+                       ↓
+               [Nginx Load Balancer]
+                   ↓       ↓       ↓
+         [App Server 1] [App Server 2] [App Server 3]
+         │ Extractor  │  │ dbt Runner │  │ Dagster   │
+         │ dbt Runner │  │ Extractor  │  │ Extractor │
+         │ Dagster    │  │ Dagster    │  │ dbt Runner│
+                   ↓       ↓       ↓
+                [PostgreSQL Primary] ← → [PostgreSQL Replica]
+                       ↓
+                [DuckDB + DuckLake Storage]
+                       ↓
+                [S3 Backup Storage]
+
+    Monitoring: [Prometheus] → [Grafana] → [Alertmanager]
+```
+
 ### dbt Models
 - **Staging**: Clean and standardize raw NFL data (`stg_pbp`, `stg_weekly`, `stg_team_desc`, `stg_schedules`)
 - **Intermediate**: Business logic and aggregations (`int_team_performance`, `int_player_weekly_stats`)
@@ -455,7 +541,7 @@ Pipeline configuration in `nfl_dagster/definitions.py`:
 
 ## Phase Development
 
-This NFL data pipeline represents **Phase 3** completion of a comprehensive data warehouse and analytics system:
+This NFL data pipeline represents **Phase 4** completion of a comprehensive production-ready data platform:
 
 - **Phase 1**: ✅ **COMPLETED** - CLI tool for exploration and debugging
   - ✅ Python 3.11 + uv environment setup
@@ -481,20 +567,37 @@ This NFL data pipeline represents **Phase 3** completion of a comprehensive data
   - ✅ Data quality testing and validation framework
   - ✅ Analytics-ready models for dashboards and ML workloads
   - ✅ Comprehensive documentation and integration testing
-- **Future Phases**: Advanced ML models, real-time processing, cloud deployment
+- **Phase 4**: ✅ **COMPLETED** - Production Deployment + Operations
+  - ✅ **Docker containerization** with multi-service orchestration
+  - ✅ **Ansible automation** for infrastructure as code
+  - ✅ **Production architecture** with load balancing and high availability
+  - ✅ **CI/CD pipeline** with automated testing and deployment
+  - ✅ **Monitoring stack** with Prometheus, Grafana, and alerting
+  - ✅ **Security hardening** with firewalls, SSL/TLS, and encrypted secrets
+  - ✅ **Backup & recovery** with S3 integration and restoration procedures
+  - ✅ **Operational tools** for maintenance, health checks, and troubleshooting
+  - ✅ **Zero-downtime deployment** with blue-green strategy and rollbacks
+- **Future Phases**: Advanced ML models, real-time processing, multi-cloud deployment
   - Advanced analytics and machine learning model development
-  - Real-time data ingestion and processing capabilities
-  - Cloud deployment with production infrastructure
-  - API layer for serving analytics data
+  - Real-time data ingestion and stream processing capabilities
+  - Multi-cloud deployment with Kubernetes orchestration
+  - API layer for serving analytics data and external integrations
 
 ## Documentation
 
 ### User Guides
 - **README.md** (this file): Overview and usage instructions
+- **PRODUCTION_DEPLOYMENT_GUIDE.md**: Complete production deployment guide
 - **DUCKLAKE_INTEGRATION.md**: Complete DuckLake integration guide and architecture
 - **PHASE3_GUIDE.md**: Comprehensive Phase 3 implementation guide
 - **NEW_CLAUDE_GUIDE.md**: Quick onboarding for new Claude instances
 - **QUICK_REFERENCE.md**: Essential commands and patterns
+
+### Operations Guides
+- **Production Health Monitoring**: Prometheus + Grafana dashboards
+- **Backup & Recovery**: S3 backup procedures and disaster recovery
+- **CI/CD Pipeline**: GitHub Actions automated deployment
+- **Security Hardening**: Multi-layer security configuration
 
 ### Developer Guides
 - **CLAUDE.md**: Comprehensive technical reference for Claude Code
@@ -507,4 +610,4 @@ This NFL data pipeline represents **Phase 3** completion of a comprehensive data
 
 ---
 
-🏈 **Ready for Production!** This NFL data pipeline is now a comprehensive, enterprise-grade **lakehouse platform** with DuckLake integration, featuring time travel capabilities, data versioning, ACID transactions, and a complete data warehouse ready for advanced analytics, machine learning, and production deployment.
+🏈 **Production Ready!** This NFL data pipeline is now a comprehensive, enterprise-grade **production data platform** with complete Docker containerization, Ansible automation, CI/CD integration, monitoring stack, and operational tools. Features include DuckLake lakehouse capabilities, zero-downtime deployment, encrypted backups, and comprehensive health monitoring - ready for enterprise-scale deployment and operations.

@@ -1,0 +1,195 @@
+version: '3.8'
+
+services:
+  # PostgreSQL + DuckLake Catalog Database
+  postgres:
+    build:
+      context: .
+      dockerfile: docker/postgres-ducklake/Dockerfile
+    container_name: nfl-postgres
+    environment:
+      - POSTGRES_DB=nfl_platform
+      - POSTGRES_USER=${POSTGRES_USER:-nfl_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-nfl_secure_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - nfl_data:/opt/nfl-data
+      - ./scripts:/opt/nfl-scripts:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - nfl_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nfl_admin} -d nfl_platform"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # NFL Data Extractor Service
+  nfl-extractor:
+    build:
+      context: .
+      dockerfile: docker/nfl-extractor/Dockerfile
+    container_name: nfl-extractor
+    environment:
+      - NFL_DATA_PATH=/data
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=nfl_platform
+      - POSTGRES_USER=${POSTGRES_USER:-nfl_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-nfl_secure_password}
+      - PYTHONPATH=/app
+    volumes:
+      - nfl_data:/data
+      - extraction_logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - nfl_network
+    restart: unless-stopped
+
+  # dbt Transform Runner
+  dbt-runner:
+    build:
+      context: .
+      dockerfile: docker/dbt-runner/Dockerfile
+    container_name: nfl-dbt-runner
+    environment:
+      - DBT_TARGET=${DBT_TARGET:-prod}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=nfl_platform
+      - POSTGRES_USER=${POSTGRES_USER:-nfl_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-nfl_secure_password}
+    volumes:
+      - nfl_data:/data
+      - dbt_logs:/app/dbt/logs
+      - dbt_target:/app/dbt/target
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nfl-extractor:
+        condition: service_started
+    networks:
+      - nfl_network
+    restart: unless-stopped
+
+  # Dagster Orchestration Server
+  dagster-server:
+    build:
+      context: .
+      dockerfile: docker/dagster-server/Dockerfile
+    container_name: nfl-dagster-server
+    environment:
+      - DAGSTER_HOME=/opt/dagster/dagster_home
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=nfl_platform
+      - POSTGRES_USER=${POSTGRES_USER:-nfl_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-nfl_secure_password}
+      - NFL_DATA_PATH=/data
+      - PYTHONPATH=/app
+    volumes:
+      - nfl_data:/data
+      - dagster_logs:/opt/dagster/logs
+      - dagster_storage:/opt/dagster/storage
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dbt-runner:
+        condition: service_started
+    networks:
+      - nfl_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/server_info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Load Balancer & Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: nfl-nginx
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      dagster-server:
+        condition: service_healthy
+    networks:
+      - nfl_network
+    restart: unless-stopped
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: nfl-prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    networks:
+      - nfl_network
+    restart: unless-stopped
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: nfl-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - nfl_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  nfl_data:
+    driver: local
+  extraction_logs:
+    driver: local
+  dbt_logs:
+    driver: local
+  dbt_target:
+    driver: local
+  dagster_logs:
+    driver: local
+  dagster_storage:
+    driver: local
+  nginx_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  nfl_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is an NFL data extraction and analysis project that builds a modern data pipeline using Python. The goal is to extract NFL data using the `nfl_data_py` package and create a comprehensive data lake with transformation layers.
 
-**🎉 Project Status: Phase 3 Complete + DuckLake Integration**
+**🎉 Project Status: Phase 4 Complete - Production Ready**
 
-> **Recent Updates (July 2025):** All critical issues have been resolved and the system is now fully functional as documented. **DuckLake lakehouse integration** has been completed, adding time travel, versioning, and ACID transaction capabilities. See `DUCKLAKE_INTEGRATION.md` for complete details on the new lakehouse features.
+> **Recent Updates (July 2025):** All critical issues have been resolved and the system is now fully functional as documented. **Production deployment infrastructure** has been completed with Docker containerization, Ansible automation, CI/CD pipeline, monitoring stack, and operational tools. The system now supports enterprise-scale deployment with zero-downtime updates, comprehensive monitoring, encrypted backups, and disaster recovery procedures. See `PRODUCTION_DEPLOYMENT_GUIDE.md` for complete production deployment details.
 
 ## Technology Stack
 
-### Currently Implemented (Phase 1 ✅ + Phase 2 ✅ + Phase 3 ✅)
+### Currently Implemented (Phase 1-4 ✅)
 - **Python Environment**: Python 3.11 with `uv` for virtual environment and package management
 - **CLI Framework**: Click for command-line interface with Rich for formatted output
 - **Data Source**: `nfl_data_py` Python package (19 NFL datasets supported)
@@ -31,14 +31,20 @@ This is an NFL data extraction and analysis project that builds a modern data pi
 - **DuckDB Integration**: High-performance analytical database for transformations
 - **DuckLake Lakehouse**: Time travel, versioning, and ACID transactions with PostgreSQL catalog
 - **Data Quality Testing**: Comprehensive dbt tests and data validation rules
+- **Docker Containerization**: Multi-service Docker containers with production orchestration
+- **Ansible Automation**: Infrastructure as code with deployment automation
+- **Production Architecture**: Load balancing, high availability, and security hardening  
+- **CI/CD Pipeline**: GitHub Actions with automated testing and deployment
+- **Monitoring Stack**: Prometheus + Grafana with comprehensive alerting
+- **Backup & Recovery**: S3 integration with encrypted backups and disaster recovery
+- **Operational Tools**: Health checks, maintenance scripts, and troubleshooting utilities
 
-### Future Implementation (Phase 4+)
+### Future Implementation (Phase 5+)
 - **Advanced Analytics**: Machine learning models for player performance prediction
-- **Real-time Processing**: Live game data ingestion and processing
+- **Real-time Processing**: Live game data ingestion and stream processing
 - **API Layer**: REST API for serving analytics data
-- **Containerization**: Podman with Docker Compose for service orchestration
-- **Cloud Deployment**: Production infrastructure with Dagster Cloud
-- **Infrastructure**: Ansible for environment setup and deployment
+- **Kubernetes**: Container orchestration for multi-cloud deployment
+- **Multi-cloud**: AWS, Azure, GCP deployment flexibility
 
 ## Development Commands
 
@@ -90,6 +96,31 @@ uv run python scripts/test_ducklake_integration.py
 
 # Phase 3 testing
 uv run python scripts/test_phase3.py
+
+# Phase 4 - Production Deployment Commands
+
+# Docker Development Environment
+docker-compose up -d
+docker-compose ps
+docker-compose logs -f dagster-server
+docker-compose down
+
+# Production Deployment with Ansible
+cd ansible
+ansible-playbook -i inventories/production/hosts.yml playbooks/deploy-nfl-platform.yml --vault-password-file .vault_pass
+ansible-playbook -i inventories/production/hosts.yml playbooks/site.yml --vault-password-file .vault_pass --tags database,application
+
+# Production Operations
+./scripts/production-health-check.sh
+./scripts/backup-nfl-data.sh
+./scripts/restore-nfl-data.sh --from-s3 nfl-platform-backup-20241220_120000
+./scripts/maintenance.sh health --verbose
+./scripts/maintenance.sh cleanup --dry-run
+./scripts/maintenance.sh optimize --force
+
+# CI/CD Pipeline (GitHub Actions)
+# Automated on push to main branch
+# Manual deployment via GitHub Actions UI
 
 # Pre-commit hooks
 uv run pre-commit install
@@ -170,16 +201,23 @@ The codebase follows functional programming principles throughout the data pipel
 - `pyproject.toml`: Project dependencies and tool configurations
 - `README.md`: Complete usage documentation and examples
 
-### Current Structure (Phase 3 ✅ Complete + DuckLake Integration)
+### Current Structure (Phase 4 ✅ Complete - Production Ready)
 - `dbt/`: ✅ dbt models and configurations (staging models + DuckLake integration working)
 - `nfl_dagster/`: ✅ Orchestration assets and schedules (webserver + DuckLake assets operational)
 - `postgres/`: ✅ Local PostgreSQL instance for DuckLake catalog
-- `scripts/`: ✅ Validation, testing, and DuckLake management scripts
+- `scripts/`: ✅ Validation, testing, DuckLake management, and production operations scripts
+- `docker/`: ✅ Multi-service Docker containers with production configurations
+- `ansible/`: ✅ Infrastructure as code with deployment automation and security hardening
+- `monitoring/`: ✅ Prometheus + Grafana configurations with comprehensive dashboards
+- `.github/workflows/`: ✅ CI/CD pipeline with automated testing and deployment
+- `docker-compose.yml` & `docker-compose.prod.yml`: ✅ Container orchestration
+- `PRODUCTION_DEPLOYMENT_GUIDE.md`: ✅ Complete production deployment documentation
 - `DUCKLAKE_INTEGRATION.md`: ✅ Complete DuckLake integration documentation
 - `FIXES_APPLIED.md`: ✅ Documentation of recent system improvements
 
-### Future Directories (Phase 4+)
-- `ansible/`: Infrastructure as code for deployment
+### Future Directories (Phase 5+)
+- `k8s/`: Kubernetes manifests for multi-cloud deployment
+- `terraform/`: Infrastructure provisioning automation
 
 ## Enhanced CLI Commands (Phase 2 ✅)
 

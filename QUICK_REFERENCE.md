@@ -2,9 +2,9 @@
 
 Quick reference for daily development tasks with the NFL Data Pipeline.
 
-## 🎯 System Status: Phase 3 Complete ✅
+## 🎯 System Status: Phase 4 Complete ✅
 
-Enterprise data warehouse with CLI tools, dbt transformations, and Dagster orchestration.
+Production-ready enterprise data platform with containerization, automation, monitoring, and operations.
 
 ## ⚡ Essential Commands
 
@@ -57,6 +57,27 @@ uv run dagster asset materialize --asset dbt_staging_models  # Run staging model
 # Combined workflows - ✅ Working
 uv run dbt run --select tag:staging && uv run dbt test  # dbt staging pipeline
 uv run python scripts/test_phase3.py  # Complete system validation (100% success)
+```
+
+### Production Deployment (Phase 4)
+```bash
+# Docker development environment
+docker-compose up -d                                    # Start all services
+docker-compose ps                                       # Check service status
+docker-compose logs -f dagster-server                   # Follow service logs
+docker-compose down                                     # Stop all services
+
+# Production deployment with Ansible
+cd ansible
+ansible-playbook -i inventories/production/hosts.yml \
+  playbooks/deploy-nfl-platform.yml \
+  --vault-password-file .vault_pass                     # Full deployment
+
+# Production operations  
+./scripts/production-health-check.sh                    # Comprehensive health check
+./scripts/backup-nfl-data.sh                           # Manual backup
+./scripts/maintenance.sh health --verbose               # System health
+./scripts/maintenance.sh cleanup --dry-run             # Cleanup preview
 ```
 
 ### Development
@@ -263,4 +284,4 @@ If all the above work, the system is functioning correctly.
 
 ---
 
-*Last Updated: Phase 3 completion - Enterprise data warehouse and analytics pipeline*
+*Last Updated: Phase 4 completion - Production-ready enterprise data platform with containerization, automation, monitoring, and operations*
