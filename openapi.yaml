@@ -1,0 +1,1149 @@
+openapi: 3.0.3
+info:
+  title: NFL Analytics Platform API
+  version: 7.0.0
+  description: |
+    Enterprise-grade NFL data extraction, machine learning analytics, and real-time processing platform.
+    
+    ## Features
+    - **19 NFL Datasets**: Complete access to play-by-play, player stats, schedules, and more
+    - **Machine Learning**: Fantasy predictions, player consistency analysis, breakout candidates
+    - **Real-time Processing**: Live game updates, WebSocket streaming, event processing
+    - **Production Ready**: Docker deployment, monitoring, CI/CD integration
+    
+    ## Quick Start
+    1. Extract NFL data: `POST /api/v1/datasets/{dataset}/extract`
+    2. Train ML models: `POST /api/v1/analytics/train`
+    3. Get predictions: `POST /api/v1/analytics/predict`
+    4. Monitor live games: `GET /api/v1/realtime/games/live`
+    
+  contact:
+    name: NFL Analytics Platform
+    url: https://github.com/anotherjson/another-nfl
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+  - url: https://nfl-analytics.example.com/api/v1
+    description: Production server
+  - url: ws://localhost:8765
+    description: WebSocket server for real-time updates
+
+tags:
+  - name: datasets
+    description: NFL data extraction and management
+  - name: analytics
+    description: Machine learning and advanced analytics
+  - name: realtime
+    description: Real-time processing and live updates
+  - name: system
+    description: System health and monitoring
+
+paths:
+  # Dataset Management
+  /datasets:
+    get:
+      tags: [datasets]
+      summary: List available NFL datasets
+      description: Get list of all 19 available NFL datasets with metadata
+      responses:
+        200:
+          description: List of available datasets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dataset'
+              example:
+                - name: pbp
+                  description: Play-by-play data with detailed game information
+                  start_year: 1999
+                  requires_year: true
+                  data_type: game_level
+                  estimated_size_mb: 150
+                - name: weekly
+                  description: Weekly player statistics
+                  start_year: 1999
+                  requires_year: true
+                  data_type: player_weekly
+
+  /datasets/{dataset}:
+    get:
+      tags: [datasets]
+      summary: Get dataset configuration
+      description: Retrieve configuration details for specific NFL dataset
+      parameters:
+        - $ref: '#/components/parameters/DatasetName'
+      responses:
+        200:
+          description: Dataset configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetConfig'
+        404:
+          $ref: '#/components/responses/NotFound'
+
+  /datasets/{dataset}/extract:
+    post:
+      tags: [datasets]
+      summary: Extract NFL dataset
+      description: |
+        Extract NFL data for specified dataset and year. Supports both year-based 
+        datasets (pbp, weekly, seasonal) and static datasets (team_desc, players).
+      parameters:
+        - $ref: '#/components/parameters/DatasetName'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractionRequest'
+            examples:
+              yearly_dataset:
+                summary: Extract play-by-play data for 2023
+                value:
+                  year: 2023
+                  validate: true
+                  save_to_disk: true
+              static_dataset:
+                summary: Extract team descriptions
+                value:
+                  validate: true
+                  save_to_disk: true
+      responses:
+        200:
+          description: Extraction completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResult'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        422:
+          $ref: '#/components/responses/ValidationError'
+
+  /datasets/{dataset}/extract/multiple:
+    post:
+      tags: [datasets]
+      summary: Extract multiple years
+      description: Extract multiple years of data in a single operation
+      parameters:
+        - $ref: '#/components/parameters/DatasetName'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MultiYearExtractionRequest'
+      responses:
+        200:
+          description: Multi-year extraction results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MultiYearExtractionResult'
+
+  /datasets/{dataset}/extract/incremental:
+    post:
+      tags: [datasets]
+      summary: Incremental extraction
+      description: |
+        Smart incremental extraction that only processes missing or stale data.
+        Uses state tracking to optimize extraction performance.
+      parameters:
+        - $ref: '#/components/parameters/DatasetName'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncrementalExtractionRequest'
+      responses:
+        200:
+          description: Incremental extraction summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncrementalExtractionResult'
+
+  /datasets/{dataset}/status:
+    get:
+      tags: [datasets]
+      summary: Get extraction status
+      description: View extraction history and current status for dataset
+      parameters:
+        - $ref: '#/components/parameters/DatasetName'
+      responses:
+        200:
+          description: Dataset extraction status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionStatus'
+
+  # Machine Learning & Analytics
+  /analytics/models:
+    get:
+      tags: [analytics]
+      summary: List available ML models
+      description: Get list of available machine learning models and their capabilities
+      responses:
+        200:
+          description: Available ML models
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MLModel'
+
+  /analytics/train:
+    post:
+      tags: [analytics]
+      summary: Train ML model
+      description: |
+        Train machine learning models on NFL data. Supports fantasy prediction,
+        consistency analysis, and team strength models.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingRequest'
+            examples:
+              fantasy_model:
+                summary: Train fantasy prediction model for RBs
+                value:
+                  model_type: fantasy
+                  position: RB
+                  years: [2020, 2021, 2022, 2023]
+                  algorithm: random_forest
+      responses:
+        200:
+          description: Model training completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingResult'
+        202:
+          description: Training started (async)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncTaskStatus'
+
+  /analytics/predict:
+    post:
+      tags: [analytics]
+      summary: Generate predictions
+      description: Generate predictions using trained ML models
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PredictionRequest'
+      responses:
+        200:
+          description: Predictions generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictionResult'
+
+  /analytics/insights:
+    get:
+      tags: [analytics]
+      summary: Get analytical insights
+      description: Generate analytical insights and reports
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [consistency, efficiency, breakout, team]
+        - name: position
+          in: query
+          schema:
+            $ref: '#/components/schemas/Position'
+        - name: min_games
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 8
+      responses:
+        200:
+          description: Analytical insights
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticalInsights'
+
+  # Real-time Processing
+  /realtime/games/live:
+    get:
+      tags: [realtime]
+      summary: Get live games
+      description: Get currently active live games with real-time scores
+      responses:
+        200:
+          description: Active live games
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LiveGame'
+
+  /realtime/events:
+    get:
+      tags: [realtime]
+      summary: Get recent events
+      description: Get recent real-time events from the event stream
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+        - name: event_type
+          in: query
+          schema:
+            $ref: '#/components/schemas/EventType'
+        - name: game_id
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Recent events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StreamEvent'
+
+    post:
+      tags: [realtime]
+      summary: Submit custom event
+      description: Submit custom event to the real-time processing stream
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StreamEvent'
+      responses:
+        202:
+          description: Event accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSubmissionResult'
+
+  /realtime/fantasy/leaderboard:
+    get:
+      tags: [realtime]
+      summary: Get live fantasy leaderboard
+      description: Get current fantasy points leaderboard with live updates
+      parameters:
+        - name: position
+          in: query
+          schema:
+            $ref: '#/components/schemas/Position'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        200:
+          description: Live fantasy leaderboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FantasyLeaderboard'
+
+  /realtime/stream/stats:
+    get:
+      tags: [realtime]
+      summary: Get stream processing stats
+      description: Get real-time stream processing performance statistics
+      responses:
+        200:
+          description: Stream processing statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamProcessingStats'
+
+  # System Health & Monitoring
+  /health:
+    get:
+      tags: [system]
+      summary: Health check
+      description: Basic health check endpoint
+      responses:
+        200:
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+  /system/status:
+    get:
+      tags: [system]
+      summary: System status
+      description: Comprehensive system status including all services
+      responses:
+        200:
+          description: System status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+
+  /system/metrics:
+    get:
+      tags: [system]
+      summary: System metrics
+      description: Performance metrics for monitoring and alerting
+      responses:
+        200:
+          description: System metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMetrics'
+
+components:
+  parameters:
+    DatasetName:
+      name: dataset
+      in: path
+      required: true
+      description: NFL dataset name
+      schema:
+        type: string
+        enum: [pbp, weekly, seasonal, weekly_rosters, seasonal_rosters, schedules, team_desc, officials, combine, draft_picks, qbr, weekly_pfr, seasonal_pfr, injuries, depth_charts, snap_counts, ftn_data, ngs_data, players]
+      example: pbp
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+
+  schemas:
+    # Core Data Models
+    Dataset:
+      type: object
+      required: [name, description, start_year, requires_year, data_type]
+      properties:
+        name:
+          type: string
+          description: Dataset identifier
+          example: pbp
+        description:
+          type: string
+          description: Human-readable description
+          example: "Play-by-play data with detailed game information"
+        start_year:
+          type: integer
+          nullable: true
+          description: Earliest available year (null for non-year datasets)
+          example: 1999
+        requires_year:
+          type: boolean
+          description: Whether this dataset requires a year parameter
+          example: true
+        data_type:
+          type: string
+          description: Category of data
+          enum: [game_level, player_weekly, player_seasonal, team_level, static]
+          example: game_level
+        estimated_size_mb:
+          type: number
+          description: Estimated file size in MB for recent years
+          example: 150.5
+
+    DatasetConfig:
+      allOf:
+        - $ref: '#/components/schemas/Dataset'
+        - type: object
+          properties:
+            validation:
+              type: object
+              properties:
+                required_columns:
+                  type: array
+                  items:
+                    type: string
+                expected_size_mb:
+                  type: number
+            extraction:
+              type: object
+              properties:
+                timeout_seconds:
+                  type: integer
+                retry_attempts:
+                  type: integer
+            output:
+              type: object
+              properties:
+                file_format:
+                  type: string
+                  enum: [parquet, csv, json]
+                compression:
+                  type: string
+                  enum: [snappy, gzip, none]
+
+    # Extraction Models
+    ExtractionRequest:
+      type: object
+      properties:
+        year:
+          type: integer
+          minimum: 1936
+          maximum: 2030
+          description: Year to extract (for year-based datasets)
+          example: 2023
+        validate:
+          type: boolean
+          default: true
+          description: Enable data validation
+        save_to_disk:
+          type: boolean
+          default: true
+          description: Save extracted data to parquet file
+        verbose:
+          type: boolean
+          default: false
+          description: Enable verbose logging
+
+    ExtractionResult:
+      type: object
+      required: [dataset, success, rows, columns, extraction_time_seconds]
+      properties:
+        dataset:
+          type: string
+          example: pbp
+        year:
+          type: integer
+          nullable: true
+          example: 2023
+        success:
+          type: boolean
+          example: true
+        rows:
+          type: integer
+          description: Number of rows extracted
+          example: 45287
+        columns:
+          type: integer
+          description: Number of columns
+          example: 372
+        file_size_mb:
+          type: number
+          description: File size in MB (if saved)
+          example: 156.8
+        extraction_time_seconds:
+          type: number
+          description: Time taken for extraction
+          example: 23.4
+        validation_passed:
+          type: boolean
+          description: Whether validation checks passed
+          example: true
+        file_path:
+          type: string
+          nullable: true
+          description: Path to saved file (if applicable)
+          example: "data/pbp/2023/etl_date=2025-07-22/data.parquet"
+
+    MultiYearExtractionRequest:
+      type: object
+      required: [years]
+      properties:
+        years:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+          example: [2020, 2021, 2022, 2023]
+        validate:
+          type: boolean
+          default: true
+        save_to_disk:
+          type: boolean
+          default: true
+        verbose:
+          type: boolean
+          default: false
+
+    MultiYearExtractionResult:
+      type: object
+      properties:
+        dataset:
+          type: string
+        years_processed:
+          type: array
+          items:
+            type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExtractionResult'
+        total_rows:
+          type: integer
+        total_size_mb:
+          type: number
+        total_time_seconds:
+          type: number
+
+    IncrementalExtractionRequest:
+      type: object
+      properties:
+        years:
+          type: array
+          items:
+            type: integer
+          description: Specific years to check (optional)
+        max_age_days:
+          type: integer
+          minimum: 0
+          default: 1
+          description: Refresh threshold in days
+        force_refresh:
+          type: boolean
+          default: false
+          description: Force refresh regardless of age
+
+    IncrementalExtractionResult:
+      type: object
+      properties:
+        dataset:
+          type: string
+        years_processed:
+          type: array
+          items:
+            type: integer
+          description: Years that were extracted
+        years_skipped:
+          type: array
+          items:
+            type: integer
+          description: Years that were skipped (already current)
+        years_refreshed:
+          type: array
+          items:
+            type: integer
+          description: Years that were force-refreshed
+        processing_time_seconds:
+          type: number
+
+    ExtractionStatus:
+      type: object
+      properties:
+        dataset:
+          type: string
+        years_available:
+          type: array
+          items:
+            type: integer
+        last_extraction:
+          type: string
+          format: date-time
+        total_rows:
+          type: integer
+        total_size_mb:
+          type: number
+        files_count:
+          type: integer
+
+    # Machine Learning Models
+    Position:
+      type: string
+      enum: [QB, RB, WR, TE, K, DEF, all]
+      example: RB
+
+    MLModel:
+      type: object
+      properties:
+        name:
+          type: string
+          example: fantasy_prediction
+        description:
+          type: string
+        supported_positions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Position'
+        algorithms:
+          type: array
+          items:
+            type: string
+            enum: [random_forest, gradient_boosting, linear_regression, neural_network]
+        features_used:
+          type: integer
+          example: 15
+
+    TrainingRequest:
+      type: object
+      required: [model_type]
+      properties:
+        model_type:
+          type: string
+          enum: [fantasy, consistency, strength, breakout]
+          example: fantasy
+        position:
+          $ref: '#/components/schemas/Position'
+        years:
+          type: array
+          items:
+            type: integer
+          example: [2020, 2021, 2022, 2023]
+        algorithm:
+          type: string
+          enum: [random_forest, gradient_boosting, linear_regression, auto]
+          default: auto
+        save_model:
+          type: boolean
+          default: true
+        model_name:
+          type: string
+          description: Custom name for saved model
+
+    TrainingResult:
+      type: object
+      properties:
+        model_type:
+          type: string
+        position:
+          $ref: '#/components/schemas/Position'
+        algorithm:
+          type: string
+        training_samples:
+          type: integer
+        features_used:
+          type: integer
+        cv_score:
+          type: number
+          description: Cross-validation score
+        mae:
+          type: number
+          description: Mean Absolute Error
+        rmse:
+          type: number
+          description: Root Mean Square Error
+        feature_importance:
+          type: object
+          additionalProperties:
+            type: number
+        model_path:
+          type: string
+          nullable: true
+          description: Path to saved model file
+
+    PredictionRequest:
+      type: object
+      required: [model_type]
+      properties:
+        model_type:
+          type: string
+          enum: [fantasy, consistency, strength]
+        model_path:
+          type: string
+          nullable: true
+          description: Path to specific model file
+        position:
+          $ref: '#/components/schemas/Position'
+        player_name:
+          type: string
+          description: Specific player to predict for
+        week:
+          type: integer
+          minimum: 1
+          maximum: 18
+          description: Week to predict for
+        data:
+          type: object
+          description: Custom player data for prediction
+
+    PredictionResult:
+      type: object
+      properties:
+        model_type:
+          type: string
+        position:
+          $ref: '#/components/schemas/Position'
+        predictions:
+          type: array
+          items:
+            type: object
+            properties:
+              player_name:
+                type: string
+              predicted_points:
+                type: number
+              confidence_lower:
+                type: number
+              confidence_upper:
+                type: number
+              prediction_rank:
+                type: integer
+
+    AnalyticalInsights:
+      type: object
+      properties:
+        insight_type:
+          type: string
+        position:
+          $ref: '#/components/schemas/Position'
+        insights:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+              description:
+                type: string
+              players:
+                type: array
+                items:
+                  type: string
+              statistics:
+                type: object
+                additionalProperties:
+                  type: number
+
+    # Real-time Processing Models
+    EventType:
+      type: string
+      enum: [score_update, fantasy_update, play_update, game_start, game_end, injury_update, timeout_called, penalty_called]
+      example: score_update
+
+    LiveGame:
+      type: object
+      required: [game_id, home_team, away_team, home_score, away_score, status]
+      properties:
+        game_id:
+          type: string
+          example: game_123
+        home_team:
+          type: string
+          example: Chiefs
+        away_team:
+          type: string
+          example: Bills
+        home_score:
+          type: integer
+          example: 21
+        away_score:
+          type: integer
+          example: 14
+        status:
+          type: string
+          enum: [LIVE, FINAL, SCHEDULED, HALFTIME]
+          example: LIVE
+        quarter:
+          type: integer
+          minimum: 1
+          maximum: 5
+          nullable: true
+        time_remaining:
+          type: string
+          nullable: true
+          example: "12:34"
+        last_update:
+          type: string
+          format: date-time
+
+    StreamEvent:
+      type: object
+      required: [event_type, timestamp, game_id]
+      properties:
+        event_type:
+          $ref: '#/components/schemas/EventType'
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-07-22T15:30:45Z"
+        game_id:
+          type: string
+          example: game_123
+        home_team:
+          type: string
+          nullable: true
+        away_team:
+          type: string
+          nullable: true
+        data:
+          type: object
+          additionalProperties: true
+          description: Event-specific data payload
+
+    EventSubmissionResult:
+      type: object
+      properties:
+        accepted:
+          type: boolean
+        event_id:
+          type: string
+        message:
+          type: string
+
+    FantasyLeaderboard:
+      type: object
+      properties:
+        position:
+          $ref: '#/components/schemas/Position'
+        last_updated:
+          type: string
+          format: date-time
+        players:
+          type: array
+          items:
+            type: object
+            properties:
+              rank:
+                type: integer
+              player_name:
+                type: string
+              team:
+                type: string
+              position:
+                $ref: '#/components/schemas/Position'
+              fantasy_points:
+                type: number
+              game_status:
+                type: string
+                enum: [PLAYING, FINAL, NOT_STARTED]
+
+    StreamProcessingStats:
+      type: object
+      properties:
+        events_processed:
+          type: integer
+        windows_processed:
+          type: integer
+        errors:
+          type: integer
+        runtime_seconds:
+          type: number
+        events_per_second:
+          type: number
+        active_windows:
+          type: integer
+        watermark:
+          type: string
+          format: date-time
+        memory_usage_mb:
+          type: number
+
+    # System Models
+    HealthCheck:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+          example: "7.0.0"
+
+    SystemStatus:
+      type: object
+      properties:
+        overall_status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        services:
+          type: object
+          properties:
+            database:
+              $ref: '#/components/schemas/ServiceStatus'
+            real_time_processor:
+              $ref: '#/components/schemas/ServiceStatus'
+            stream_processor:
+              $ref: '#/components/schemas/ServiceStatus'
+            ml_engine:
+              $ref: '#/components/schemas/ServiceStatus'
+        uptime_seconds:
+          type: number
+        version:
+          type: string
+
+    ServiceStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [online, offline, degraded]
+        last_check:
+          type: string
+          format: date-time
+        response_time_ms:
+          type: number
+        error_message:
+          type: string
+          nullable: true
+
+    SystemMetrics:
+      type: object
+      properties:
+        cpu_usage_percent:
+          type: number
+        memory_usage_percent:
+          type: number
+        disk_usage_percent:
+          type: number
+        active_connections:
+          type: integer
+        requests_per_minute:
+          type: number
+        error_rate_percent:
+          type: number
+
+    AsyncTaskStatus:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        progress_percent:
+          type: number
+          minimum: 0
+          maximum: 100
+        estimated_completion:
+          type: string
+          format: date-time
+          nullable: true
+
+    # Error Models
+    Error:
+      type: object
+      required: [status, error]
+      properties:
+        status:
+          type: string
+          enum: [error]
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: INVALID_DATASET
+            message:
+              type: string
+              example: "Dataset 'invalid_name' not found"
+            details:
+              type: object
+              additionalProperties: true
+        metadata:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+            version:
+              type: string
+
+    ValidationError:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            validation_errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+                  value:
+                    nullable: true
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+security:
+  - bearerAuth: []
+  - apiKeyAuth: []
+
+# WebSocket specification (using AsyncAPI concepts in OpenAPI)
+x-websocket-info:
+  url: ws://localhost:8765
+  protocol: websocket
+  description: |
+    Real-time WebSocket connection for live NFL events and updates.
+    
+    ## Connection
+    Connect to `ws://localhost:8765` to receive real-time events.
+    
+    ## Message Format
+    All messages are JSON with the following structure:
+    ```json
+    {
+      "event_type": "score_update",
+      "timestamp": "2025-07-22T15:30:45Z",
+      "game_id": "game_123",
+      "data": { ... }
+    }
+    ```
+    
+    ## Event Types
+    - `score_update`: Game score changes
+    - `fantasy_update`: Fantasy point updates
+    - `play_update`: Individual play events
+    - `game_start`: Game initiation
+    - `game_end`: Game completion
+    
+    ## Client Implementation
+    ```javascript
+    const ws = new WebSocket('ws://localhost:8765');
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log('Received:', data.event_type);
+    };
+    ```

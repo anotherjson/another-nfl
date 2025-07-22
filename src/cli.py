@@ -1160,5 +1160,117 @@ def show_realtime_status():
         console.print(f"[red]❌ Status check failed: {e}[/red]")
 
 
+@main.group()
+def api():
+    """API server management and operations."""
+    pass
+
+
+@api.command("start")
+@click.option("--host", default="0.0.0.0", help="Host to bind to")
+@click.option("--port", default=8000, help="Port to bind to")
+@click.option("--reload", default=True, help="Enable auto-reload for development")
+def start_api_server(host, port, reload):
+    """Start the FastAPI server with OpenAPI documentation."""
+    try:
+        console.print("[cyan]🚀 Starting NFL Analytics Platform API Server...[/cyan]")
+        console.print(f"[green]📊 API Documentation: http://{host}:{port}/docs[/green]")
+        console.print(f"[green]📖 ReDoc Documentation: http://{host}:{port}/redoc[/green]")
+        console.print(f"[green]🔗 OpenAPI JSON: http://{host}:{port}/api/v1/openapi.json[/green]")
+        console.print("[yellow]Press Ctrl+C to stop[/yellow]")
+        
+        # Import and start the API server
+        from src.api.main import app
+        import uvicorn
+        
+        uvicorn.run(
+            "src.api.main:app",
+            host=host,
+            port=port,
+            reload=reload,
+            log_level="info"
+        )
+        
+    except ImportError:
+        console.print("[red]❌ FastAPI dependencies not installed. Run: uv add fastapi uvicorn pydantic[/red]")
+    except Exception as e:
+        console.print(f"[red]❌ API server failed to start: {e}[/red]")
+        sys.exit(1)
+
+
+@api.command("docs")
+def generate_api_docs():
+    """Generate and validate OpenAPI documentation."""
+    try:
+        console.print("[cyan]📖 Generating OpenAPI documentation...[/cyan]")
+        
+        from src.api.main import app
+        import json
+        from pathlib import Path
+        
+        # Get OpenAPI schema
+        openapi_schema = app.openapi()
+        
+        # Save to file
+        docs_path = Path("docs/openapi_generated.json")
+        docs_path.parent.mkdir(exist_ok=True)
+        
+        with open(docs_path, "w") as f:
+            json.dump(openapi_schema, f, indent=2)
+        
+        console.print(f"[green]✅ OpenAPI documentation generated: {docs_path}[/green]")
+        console.print(f"[green]📊 Total endpoints: {len(openapi_schema.get('paths', {}))}/[green]")
+        console.print(f"[green]📋 Components defined: {len(openapi_schema.get('components', {}).get('schemas', {}))}/[green]")
+        
+    except ImportError:
+        console.print("[red]❌ FastAPI not available for documentation generation[/red]")
+    except Exception as e:
+        console.print(f"[red]❌ Documentation generation failed: {e}[/red]")
+
+
+@api.command("validate")
+@click.option("--spec-file", default="openapi.yaml", help="OpenAPI specification file to validate")
+def validate_openapi_spec(spec_file):
+    """Validate OpenAPI specification file."""
+    try:
+        from pathlib import Path
+        import yaml
+        
+        spec_path = Path(spec_file)
+        if not spec_path.exists():
+            console.print(f"[red]❌ Specification file not found: {spec_path}[/red]")
+            sys.exit(1)
+        
+        console.print(f"[cyan]🔍 Validating OpenAPI specification: {spec_path}[/cyan]")
+        
+        # Load and validate YAML
+        with open(spec_path, "r") as f:
+            spec = yaml.safe_load(f)
+        
+        # Basic validation checks
+        required_fields = ["openapi", "info", "paths"]
+        missing_fields = [field for field in required_fields if field not in spec]
+        
+        if missing_fields:
+            console.print(f"[red]❌ Missing required fields: {', '.join(missing_fields)}[/red]")
+            sys.exit(1)
+        
+        # Count components
+        paths_count = len(spec.get("paths", {}))
+        components_count = len(spec.get("components", {}).get("schemas", {}))
+        
+        console.print(f"[green]✅ OpenAPI specification is valid[/green]")
+        console.print(f"[cyan]📊 API Version: {spec['info']['version']}[/cyan]")
+        console.print(f"[cyan]🔗 Total Endpoints: {paths_count}[/cyan]")
+        console.print(f"[cyan]📋 Schema Components: {components_count}[/cyan]")
+        
+    except yaml.YAMLError as e:
+        console.print(f"[red]❌ YAML parsing error: {e}[/red]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[red]❌ Validation failed: {e}[/red]")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     main()

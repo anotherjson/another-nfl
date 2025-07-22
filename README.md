@@ -49,6 +49,14 @@ A comprehensive, production-grade data warehouse and analytics pipeline for NFL 
 - **Event-Driven Architecture**: Scalable publish/subscribe event handling
 - **Multi-client Support**: Multiple simultaneous dashboard connections
 
+### REST API & OpenAPI (Phase 8 - In Development)
+- **OpenAPI 3.0.3 Specification**: Complete API documentation with interactive docs
+- **FastAPI Implementation**: High-performance async REST API server
+- **Comprehensive Endpoints**: Data extraction, ML training, real-time processing APIs
+- **Interactive Documentation**: Swagger UI and ReDoc interfaces
+- **API Authentication**: JWT and API key security schemes
+- **Docker Integration**: Containerized API server with health checks
+
 ### System Quality
 - **Rich Output**: Beautiful table formatting and colored output using Rich library
 - **Error Handling**: Comprehensive error handling with verbose mode for debugging
@@ -355,6 +363,34 @@ uv run dbt compile
 
 # Test Dagster definitions with DuckLake
 uv run dagster instance info
+```
+
+### API Server Commands (Phase 8)
+
+#### Start API Server
+```bash
+# Start FastAPI server with OpenAPI documentation
+uv run python -m src.cli api start
+
+# Start with custom host/port
+uv run python -m src.cli api start --host 0.0.0.0 --port 8000
+
+# Start with Docker
+docker-compose up api-server
+```
+
+#### API Documentation
+```bash
+# Generate OpenAPI documentation
+uv run python -m src.cli api docs
+
+# Validate OpenAPI specification
+uv run python -m src.cli api validate --spec-file openapi.yaml
+
+# Access interactive documentation (when server is running)
+# Swagger UI: http://localhost:8000/docs
+# ReDoc: http://localhost:8000/redoc
+# OpenAPI JSON: http://localhost:8000/api/v1/openapi.json
 ```
 
 ### Available NFL Datasets

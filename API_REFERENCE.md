@@ -2,17 +2,208 @@
 
 ## Overview
 
-This document provides comprehensive API documentation for all components of the NFL Analytics Platform, including CLI commands, Python APIs, WebSocket interfaces, and service endpoints.
+The NFL Analytics Platform provides a comprehensive REST API built on **OpenAPI 3.0.3** specification for enterprise-grade NFL data processing, machine learning analytics, and real-time processing capabilities.
+
+## 🚀 Quick Start
+
+### OpenAPI Specification
+- **Specification File**: [`openapi.yaml`](./openapi.yaml)
+- **Interactive Documentation**: `http://localhost:8000/docs` (when API server is running)
+- **API Version**: 7.0.0
+- **Base URL**: `http://localhost:8000/api/v1`
+
+### Start API Server
+```bash
+# Coming in Phase 8 - REST API Implementation
+uv run python -m src.api.main
+# Or using Docker
+docker-compose up api-server
+```
+
+## 📋 OpenAPI Features
+
+### API Categories
+- **🗂️ Datasets**: NFL data extraction and management (19 datasets)
+- **🧠 Analytics**: Machine learning models and predictions  
+- **🔴 Real-time**: Live game processing and WebSocket streaming
+- **⚡ System**: Health monitoring and performance metrics
+
+### Supported Operations
+- **Data Extraction**: Extract any of 19 NFL datasets with validation
+- **ML Training**: Train fantasy prediction and consistency models
+- **Live Processing**: Real-time game events and fantasy tracking
+- **System Monitoring**: Health checks and performance metrics
+
+## 🔗 API Endpoints Overview
+
+### Dataset Management
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/datasets` | GET | List all 19 NFL datasets |
+| `/datasets/{dataset}` | GET | Get dataset configuration |
+| `/datasets/{dataset}/extract` | POST | Extract NFL dataset |
+| `/datasets/{dataset}/extract/multiple` | POST | Multi-year extraction |
+| `/datasets/{dataset}/extract/incremental` | POST | Smart incremental processing |
+| `/datasets/{dataset}/status` | GET | Extraction status and history |
+
+### Machine Learning & Analytics  
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/analytics/models` | GET | List available ML models |
+| `/analytics/train` | POST | Train ML models on NFL data |
+| `/analytics/predict` | POST | Generate predictions |
+| `/analytics/insights` | GET | Analytical insights and reports |
+
+### Real-time Processing
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/realtime/games/live` | GET | Active live games |
+| `/realtime/events` | GET/POST | Event stream management |
+| `/realtime/fantasy/leaderboard` | GET | Live fantasy rankings |
+| `/realtime/stream/stats` | GET | Processing performance metrics |
+
+### System Monitoring
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Basic health check |
+| `/system/status` | GET | Comprehensive system status |
+| `/system/metrics` | GET | Performance metrics |
+
+## 📖 Interactive Documentation
+
+When the API server is running, access interactive documentation:
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+- **OpenAPI JSON**: `http://localhost:8000/openapi.json`
+
+## 🔧 API Implementation Status
+
+### ✅ Available (Phase 7)
+- WebSocket real-time streaming (`ws://localhost:8765`)
+- CLI interfaces for all operations
+- Python library APIs
+
+### 🚧 Coming Soon (Phase 8)
+- REST API server implementation
+- OpenAPI-compliant endpoints
+- Interactive documentation server
+- Authentication and rate limiting
 
 ## Table of Contents
 
-- [CLI API](#cli-api)
-- [Python Library API](#python-library-api)
+- [OpenAPI Specification Details](#openapi-specification-details)
 - [WebSocket API](#websocket-api)
-- [Machine Learning API](#machine-learning-api)
-- [Real-time Processing API](#real-time-processing-api)
-- [Data Extraction API](#data-extraction-api)
-- [Configuration API](#configuration-api)
+- [CLI API](#cli-api)  
+- [Python Library API](#python-library-api)
+- [Error Handling](#error-handling)
+- [Authentication](#authentication)
+- [Rate Limiting](#rate-limiting)
+
+## OpenAPI Specification Details
+
+The complete OpenAPI 3.0.3 specification is available in [`openapi.yaml`](./openapi.yaml) and includes:
+
+### 📊 Data Models
+- **Dataset**: NFL dataset metadata and configuration
+- **ExtractionResult**: Data extraction response with metrics  
+- **MLModel**: Machine learning model definitions
+- **LiveGame**: Real-time game state information
+- **StreamEvent**: Event stream message format
+
+### 🔒 Security Schemes
+```yaml
+securitySchemes:
+  bearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT
+  apiKeyAuth:
+    type: apiKey
+    in: header
+    name: X-API-Key
+```
+
+### 📝 Example API Calls
+
+#### Extract NFL Dataset
+```bash
+curl -X POST "http://localhost:8000/api/v1/datasets/pbp/extract" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "year": 2023,
+    "validate": true,
+    "save_to_disk": true
+  }'
+```
+
+Response:
+```json
+{
+  "dataset": "pbp",
+  "year": 2023,
+  "success": true,
+  "rows": 45287,
+  "columns": 372,
+  "file_size_mb": 156.8,
+  "extraction_time_seconds": 23.4,
+  "validation_passed": true,
+  "file_path": "data/pbp/2023/etl_date=2025-07-22/data.parquet"
+}
+```
+
+#### Train ML Model
+```bash
+curl -X POST "http://localhost:8000/api/v1/analytics/train" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model_type": "fantasy",
+    "position": "RB",
+    "years": [2020, 2021, 2022, 2023],
+    "algorithm": "random_forest"
+  }'
+```
+
+#### Get Live Games
+```bash
+curl "http://localhost:8000/api/v1/realtime/games/live"
+```
+
+Response:
+```json
+[
+  {
+    "game_id": "game_123",
+    "home_team": "Chiefs",
+    "away_team": "Bills",
+    "home_score": 21,
+    "away_score": 14,
+    "status": "LIVE",
+    "quarter": 3,
+    "time_remaining": "12:34",
+    "last_update": "2025-07-22T15:30:45Z"
+  }
+]
+```
+
+### 📋 Dataset Enumeration
+All 19 NFL datasets are defined in the OpenAPI spec:
+```yaml
+enum: [pbp, weekly, seasonal, weekly_rosters, seasonal_rosters, 
+       schedules, team_desc, officials, combine, draft_picks, 
+       qbr, weekly_pfr, seasonal_pfr, injuries, depth_charts, 
+       snap_counts, ftn_data, ngs_data, players]
+```
+
+### 🔄 Async Operations  
+Long-running operations (like model training) return async task status:
+```json
+{
+  "task_id": "train_123",
+  "status": "running", 
+  "progress_percent": 45,
+  "estimated_completion": "2025-07-22T16:00:00Z"
+}
+```
 
 ## CLI API
 
