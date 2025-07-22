@@ -1,0 +1,19 @@
+{
+  "name": "nfl-evidence-dashboard",
+  "version": "1.0.0",
+  "description": "Evidence dashboard for NFL analytics",
+  "main": "index.js",
+  "scripts": {
+    "dev": "evidence dev",
+    "build": "evidence build",
+    "start": "evidence start"
+  },
+  "dependencies": {
+    "@evidence-dev/core": "^0.1.0",
+    "@evidence-dev/postgres": "^0.1.0",
+    "@evidence-dev/duckdb": "^0.1.0"
+  },
+  "devDependencies": {
+    "@evidence-dev/cli": "^0.1.0"
+  }
+}

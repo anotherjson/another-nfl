@@ -1,10 +1,8 @@
-# Essential Commands Reference
+# NFL Pipeline - Quick Reference Guide
 
-Quick reference for daily development tasks with the NFL Data Pipeline.
+## 🎯 System Status: Phase 5 Complete ✅
 
-## 🎯 System Status: Phase 4 Complete ✅
-
-Production-ready enterprise data platform with containerization, automation, monitoring, and operations.
+Production visualization platform with Streamlit + Evidence dashboards deployed via Podman containers.
 
 ## ⚡ Essential Commands
 
@@ -59,25 +57,42 @@ uv run dbt run --select tag:staging && uv run dbt test  # dbt staging pipeline
 uv run python scripts/test_phase3.py  # Complete system validation (100% success)
 ```
 
+### Visualization Services (Phase 5) - ✅ ACTIVE
+```bash
+# Container status
+podman ps                                               # Check running dashboards
+podman logs nfl-streamlit --tail 10                    # Streamlit logs
+podman logs nfl-evidence --tail 5                      # Evidence logs
+
+# Dashboard access
+curl http://localhost:8501/_stcore/health              # Streamlit health check
+curl http://localhost:3002/                           # Evidence dashboard
+open http://localhost:8501                            # Interactive analytics
+open http://localhost:3002                            # Executive reports
+
+# Container management
+podman stop nfl-streamlit nfl-evidence                # Stop dashboards
+podman start nfl-streamlit nfl-evidence               # Restart dashboards
+podman network ls                                     # Check network config
+```
+
 ### Production Deployment (Phase 4)
 ```bash
-# Docker development environment
-docker-compose up -d                                    # Start all services
-docker-compose ps                                       # Check service status
-docker-compose logs -f dagster-server                   # Follow service logs
-docker-compose down                                     # Stop all services
+# Docker development environment (when Docker available)
+docker-compose up -d streamlit-app evidence-app       # Start visualization services
+docker-compose ps                                     # Check service status  
+docker-compose logs -f streamlit-app                  # Follow dashboard logs
 
 # Production deployment with Ansible
 cd ansible
 ansible-playbook -i inventories/production/hosts.yml \
   playbooks/deploy-nfl-platform.yml \
-  --vault-password-file .vault_pass                     # Full deployment
+  --vault-password-file .vault_pass                   # Full deployment
 
 # Production operations  
-./scripts/production-health-check.sh                    # Comprehensive health check
-./scripts/backup-nfl-data.sh                           # Manual backup
-./scripts/maintenance.sh health --verbose               # System health
-./scripts/maintenance.sh cleanup --dry-run             # Cleanup preview
+./scripts/production-health-check.sh                  # Comprehensive health check
+./scripts/backup-nfl-data.sh                         # Manual backup
+./scripts/maintenance.sh health --verbose             # System health
 ```
 
 ### Development
@@ -284,4 +299,12 @@ If all the above work, the system is functioning correctly.
 
 ---
 
-*Last Updated: Phase 4 completion - Production-ready enterprise data platform with containerization, automation, monitoring, and operations*
+*Last Updated: Phase 5 completion - Production visualization platform with Streamlit + Evidence dashboards running on Podman*
+
+## 🏈 Current Visualization Services
+
+- **Streamlit Analytics**: http://localhost:8501 - Interactive NFL analytics with team performance, fantasy football, and betting intelligence
+- **Evidence Reports**: http://localhost:3002 - SQL-based executive dashboards with automated reporting
+- **Container Status**: `podman ps` shows nfl-streamlit and nfl-evidence running on nfl_network
+
+**🎉 The NFL data pipeline is now a complete end-to-end analytics platform with production visualization capabilities!**

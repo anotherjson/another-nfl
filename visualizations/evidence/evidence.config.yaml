@@ -1,0 +1,54 @@
+# Evidence Configuration
+# NFL Analytics Dashboard
+
+# Project settings
+title: "NFL Analytics Dashboard"
+description: "Comprehensive NFL data analytics powered by Evidence and dbt"
+
+# Database connections
+databases:
+  postgres:
+    type: postgres
+    host: ${POSTGRES_HOST}
+    port: 5432
+    database: ${POSTGRES_DB}
+    user: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    ssl: false
+  
+  duckdb:
+    type: duckdb
+    filename: "/data/nfl_analytics.duckdb"
+
+# Default database
+default_database: postgres
+
+# Theme and styling
+theme:
+  primary_color: "#1f4e79"  # NFL blue
+  secondary_color: "#c8102e"  # NFL red
+  background_color: "#ffffff"
+  text_color: "#333333"
+
+# Navigation
+navigation:
+  - title: "Overview"
+    path: "/"
+  - title: "Team Performance"
+    path: "/team-performance"
+  - title: "Player Analysis"
+    path: "/player-analysis"
+  - title: "Fantasy Football"
+    path: "/fantasy"
+  - title: "Game Analysis"
+    path: "/games"
+
+# Build settings
+build:
+  output_dir: "build"
+  static_dir: "static"
+
+# Development settings
+dev:
+  port: 3000
+  host: "0.0.0.0"

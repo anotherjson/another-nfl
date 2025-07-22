@@ -165,6 +165,63 @@ services:
       - nfl_network
     restart: unless-stopped
 
+  # Streamlit Analytics App
+  streamlit-app:
+    build:
+      context: .
+      dockerfile: docker/streamlit-app/Dockerfile
+    container_name: nfl-streamlit
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=nfl_platform
+      - POSTGRES_USER=${POSTGRES_USER:-nfl_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-nfl_secure_password}
+      - NFL_DATA_PATH=/data
+      - PYTHONPATH=/app
+    volumes:
+      - nfl_data:/data:ro
+    ports:
+      - "8501:8501"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dagster-server:
+        condition: service_healthy
+    networks:
+      - nfl_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Evidence Dashboard
+  evidence-app:
+    build:
+      context: .
+      dockerfile: docker/evidence-app/Dockerfile
+    container_name: nfl-evidence
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=nfl_platform
+      - POSTGRES_USER=${POSTGRES_USER:-nfl_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-nfl_secure_password}
+      - NODE_ENV=production
+    volumes:
+      - nfl_data:/data:ro
+      - evidence_cache:/app/.evidence/cache
+    ports:
+      - "3002:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dbt-runner:
+        condition: service_started
+    networks:
+      - nfl_network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local
@@ -185,6 +242,8 @@ volumes:
   prometheus_data:
     driver: local
   grafana_data:
+    driver: local
+  evidence_cache:
     driver: local
 
 networks:

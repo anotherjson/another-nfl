@@ -41,8 +41,8 @@ datasources:
     type: postgres
     access: proxy
     url: postgres:5432
-    database: nfl_catalog
-    user: nfl_user
+    database: nfl_platform
+    user: nfl_admin
     editable: true
     jsonData:
       sslmode: disable
@@ -53,4 +53,15 @@ datasources:
       postgresVersion: 1500
       timescaledb: false
     secureJsonData:
-      password: nfl_secure_password_change_in_production
+      password: nfl_secure_password
+
+  - name: DuckDB-NFL-Analytics
+    type: grafana-duckdb-datasource
+    access: direct
+    url: /data/nfl_analytics.duckdb
+    editable: true
+    jsonData:
+      queryTimeout: 30s
+      allowClearCache: true
+      defaultCacheTTL: 300
+    isDefault: false
