@@ -4,461 +4,234 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an NFL data extraction and analysis project that builds a modern data pipeline using Python. The goal is to extract NFL data using the `nfl_data_py` package and create a comprehensive data lake with transformation layers.
+NFL data extraction and analysis project building a modern data pipeline with Python. Extracts NFL data using `nfl_data_py` and creates a comprehensive data lake with transformation layers.
 
-**🎉 Project Status: Phase 4 Complete - Production Ready**
+**🎉 Status: Phase 5+ Complete - Production Ready**
 
-> **Recent Updates (July 2025):** All critical issues have been resolved and the system is now fully functional as documented. **Production deployment infrastructure** has been completed with Docker containerization, Ansible automation, CI/CD pipeline, monitoring stack, and operational tools. The system now supports enterprise-scale deployment with zero-downtime updates, comprehensive monitoring, encrypted backups, and disaster recovery procedures. See `PRODUCTION_DEPLOYMENT_GUIDE.md` for complete production deployment details.
+> **Latest (July 23, 2025):** Enhanced CLI tooling for dbt models, DuckLake integration, time travel queries, Dagster materialization. **94% test success rate**, **17/17 intermediate model tests passing**, **100% operational visualization stack**.
 
 ## Technology Stack
 
-### Currently Implemented (Phase 1-4 ✅)
-- **Python Environment**: Python 3.11 with `uv` for virtual environment and package management
-- **CLI Framework**: Click for command-line interface with Rich for formatted output
-- **Data Source**: `nfl_data_py` Python package (19 NFL datasets supported)
-- **Data Analysis**: pandas for data manipulation, pyarrow for Parquet file handling
-- **Code Quality**: Ruff for formatting and linting with pre-commit hooks
-- **Testing**: pytest with coverage reporting (comprehensive test suite)
-- **Documentation**: Comprehensive README and usage examples
-- **Configuration System**: YAML-based configuration for all 19 NFL datasets with validation
-- **Configuration Management**: PyYAML integration with comprehensive config loader
-- **Production Extraction**: NFLDataExtractor with retry logic, validation, and error handling
-- **Data Partitioning**: Year-based and ETL-date partitioning with configurable paths
-- **Incremental Processing**: ExtractionManager with state tracking and incremental updates
-- **Data Validation**: Comprehensive validation with required column checks and size estimates
-- **dbt Data Warehouse**: Complete dbt project with staging, intermediate, and marts models
-- **Dagster Orchestration**: Production-ready pipeline orchestration with scheduling and monitoring
-- **DuckDB Integration**: High-performance analytical database for transformations
-- **DuckLake Lakehouse**: Time travel, versioning, and ACID transactions with PostgreSQL catalog
-- **Data Quality Testing**: Comprehensive dbt tests and data validation rules
-- **Docker Containerization**: Multi-service Docker containers with production orchestration
-- **Ansible Automation**: Infrastructure as code with deployment automation
-- **Production Architecture**: Load balancing, high availability, and security hardening  
-- **CI/CD Pipeline**: GitHub Actions with automated testing and deployment
-- **Monitoring Stack**: Prometheus + Grafana with comprehensive alerting
-- **Backup & Recovery**: S3 integration with encrypted backups and disaster recovery
-- **Operational Tools**: Health checks, maintenance scripts, and troubleshooting utilities
-
-### Future Implementation (Phase 5+)
-- **Advanced Analytics**: Machine learning models for player performance prediction
-- **Real-time Processing**: Live game data ingestion and stream processing
-- **API Layer**: REST API for serving analytics data
-- **Kubernetes**: Container orchestration for multi-cloud deployment
-- **Multi-cloud**: AWS, Azure, GCP deployment flexibility
+### Core Components (Production Ready ✅)
+- **Python 3.11** with `uv` package management
+- **CLI Framework**: Click + Rich for formatted output
+- **Data Source**: `nfl_data_py` (19 NFL datasets)
+- **Data Processing**: pandas, pyarrow, DuckDB
+- **Code Quality**: Ruff, pre-commit hooks, pytest (94% success rate)
+- **dbt Data Warehouse**: Staging + enhanced intermediate models
+- **Dagster Orchestration**: Pipeline orchestration with monitoring
+- **DuckLake**: Time travel, versioning, ACID transactions
+- **FastAPI**: REST API (9/15 endpoints operational)
+- **Visualization**: Streamlit dashboard + Evidence + Grafana
+- **CLI Model Operations**: dbt integration with time travel queries
 
 ## Development Commands
 
+### Environment Setup
 ```bash
-# Install Python 3.11 and set up environment
+# Setup environment
 uv python install 3.11
-uv init --python 3.11
 uv sync --dev
+uv run pre-commit install
+```
 
-# Code formatting and linting
-uv run ruff format .
-uv run ruff check .
-
-# Run tests with coverage
-uv run pytest --cov=src --cov-report=html --cov-report=term
-
-# CLI tool commands - Data Exploration
-uv run python -m src.cli --help
+### Data Exploration & Extraction
+```bash
+# CLI data exploration
 uv run python -m src.cli explore datasets
-uv run python -m src.cli explore data team_desc --limit 3
-uv run python -m src.cli read data/sample.parquet --info
+uv run python -m src.cli explore data pbp --year 2023
 
-# CLI tool commands - Production Data Extraction
-uv run python -m src.cli extract --help
+# Production data extraction
 uv run python -m src.cli extract dataset pbp --year 2023
-uv run python -m src.cli extract multiple weekly --years 2020,2021,2022
-uv run python -m src.cli extract incremental pbp --max-age-days 7
+uv run python -m src.cli extract incremental weekly --max-age-days 7
 uv run python -m src.cli extract status
-uv run python -m src.cli extract cleanup --max-age-days 30
+```
 
-# dbt commands - Data Transformations (Phase 3) - ✅ WORKING
+### dbt Data Transformations
+```bash
+# Core dbt commands
 uv run dbt deps
 uv run dbt run --select tag:staging
-uv run dbt run
+uv run dbt run --select tag:intermediate  # 17/17 tests passing
 uv run dbt test
 uv run dbt docs generate && uv run dbt docs serve
+```
 
-# Dagster commands - Pipeline Orchestration (Phase 3) - ✅ WORKING
+### Advanced CLI Model Operations (NEW)
+```bash
+# dbt model management through CLI
+uv run python -m src.cli models list
+uv run python -m src.cli models materialize --verbose
+uv run python -m src.cli models query int_team_performance --limit 10
+uv run python -m src.cli models catalog
+uv run python -m src.cli models sql "SELECT COUNT(*) FROM stg_team_desc"
+```
+
+### Dagster Orchestration
+```bash
+# Pipeline orchestration
 uv run dagster dev -f nfl_dagster/definitions.py
-uv run dagster asset materialize --asset pbp_data
 uv run dagster asset materialize --asset dbt_staging_models
+```
 
-# DuckLake commands - Lakehouse Operations (Phase 3+) - ✅ WORKING
-./scripts/postgres_start.sh
-./scripts/postgres_stop.sh
-uv run python scripts/register_existing_data.py
-uv run python scripts/test_ducklake_integration.py
-./scripts/load_env_and_run_dbt.sh run --select stg_team_desc_ducklake
+### API & Visualization
+```bash
+# FastAPI server (9/15 endpoints working)
+cd src/api && uv run uvicorn main:app --port 8000
 
-# Phase 3 testing
+# Streamlit dashboard (production ready)
+cd visualizations/streamlit_app
+uv run streamlit run working_main.py --server.port 8504
+```
+
+### Testing & Validation
+```bash
+# Comprehensive testing
+uv run pytest --cov=src --cov-report=html
 uv run python scripts/test_phase3.py
-
-# Phase 4 - Production Deployment Commands
-
-# Docker Development Environment
-docker-compose up -d
-docker-compose ps
-docker-compose logs -f dagster-server
-docker-compose down
-
-# Production Deployment with Ansible
-cd ansible
-ansible-playbook -i inventories/production/hosts.yml playbooks/deploy-nfl-platform.yml --vault-password-file .vault_pass
-ansible-playbook -i inventories/production/hosts.yml playbooks/site.yml --vault-password-file .vault_pass --tags database,application
-
-# Production Operations
-./scripts/production-health-check.sh
-./scripts/backup-nfl-data.sh
-./scripts/restore-nfl-data.sh --from-s3 nfl-platform-backup-20241220_120000
-./scripts/maintenance.sh health --verbose
-./scripts/maintenance.sh cleanup --dry-run
-./scripts/maintenance.sh optimize --force
-
-# CI/CD Pipeline (GitHub Actions)
-# Automated on push to main branch
-# Manual deployment via GitHub Actions UI
-
-# Pre-commit hooks
-uv run pre-commit install
-uv run pre-commit run --all-files
+uv run pytest tests/test_cli_models.py -v
 ```
 
-## Project Architecture
+## Data Pipeline Architecture
 
-### Phase-Based Development
-The project follows a structured phase-based approach:
+### Layer Structure
+- **Raw Data**: Parquet files from `nfl_data_py` (19 datasets)
+- **Staging**: Light cleaning & normalization (4 models)
+- **Intermediate**: Enhanced analytics with EPA metrics (2 models)
+  - `int_team_performance`: Team analytics, win rates, efficiency
+  - `int_player_weekly_stats`: Player rankings, rolling averages, EPA
+- **Marts**: Analytics-ready models (future enhancement)
 
-1. **Phase 1**: ✅ **COMPLETED** - Environment setup, project structure, CLI tool for NFL data exploration
-   - ✅ Python 3.11 environment with uv package manager
-   - ✅ Complete pyproject.toml with dependencies and tool configurations
-   - ✅ Pre-commit hooks with ruff for code quality
-   - ✅ CLI structure with Click framework covering all 19 NFL datasets:
-     - `explore datasets` - List available NFL datasets with rich table formatting
-     - `explore data <dataset> --year <year>` - Sample data with filtering and verbose error handling
-     - `read parquet <file> --info` - Read and analyze parquet files with detailed information
-   - ✅ pytest with 82% coverage and comprehensive test patterns
-   - ✅ Complete README documentation with usage examples
-   - ✅ Full test suite with 44 test cases across CLI, NFLExplorer, and ParquetReader
-   - ✅ Enhanced .gitignore for environment variables, database configs, and sensitive files
-   - ✅ Rich formatted console output with beautiful tables and error handling
+### Enhanced Intermediate Models
+**int_team_performance**: Advanced team performance metrics
+- Down conversion rates (3rd/4th down success)
+- EPA/WPA analytics per play
+- Win percentages and season progress
+- Play-calling distribution and efficiency
 
-2. **Phase 2**: ✅ **COMPLETED** - Data extraction functions with configuration for each NFL dataset
-   - ✅ Created configuration files defining extraction parameters for each dataset
-   - ✅ Built functions for extracting data from nfl_data_py with year-based partitioning
-   - ✅ Implemented data validation and quality checks
-   - ✅ Added support for incremental data extraction
-   - ✅ Built comprehensive tests for extraction functions
+**int_player_weekly_stats**: Comprehensive player analytics  
+- Position rankings (weekly + season-to-date)
+- 4-week rolling fantasy averages
+- EPA per opportunity (receiving/rushing/passing)
+- Air yards analytics and YAC metrics
+- Efficiency calculations and opponent tracking
 
-3. **Phase 3**: ✅ **COMPLETED** - dbt staging models, Dagster integration, comprehensive testing
-   - ✅ Set up dbt project structure following best practices
-   - ✅ Created staging models for light transformations of raw datasets (4 models working)
-   - ✅ Integrated Dagster for orchestrating dbt and data extraction
-   - ✅ Built comprehensive Phase 3 validation testing (100% success rate)
-   - 🚧 Intermediate and marts models need enhancement (partial implementation)
+## Project Structure
 
-4. **Future Phases**: Advanced transformations, ML models, dashboards
-   - Advanced data transformations and feature engineering
-   - Machine learning model development and deployment
-   - Dashboard and visualization tools integration
-   - Real-time data processing capabilities
-
-### Data Pipeline Structure
-- **Raw Data**: Extracted from `nfl_data_py` and stored as partitioned Parquet files
-- **Staging Layer**: dbt models for light data cleaning and normalization
-- **Intermediate Layer**: Team and position-specific data models
-- **Final Layer**: Analytics-ready models for dashboards and ML
-
-### Functional Programming Paradigm
-The codebase follows functional programming principles throughout the data pipeline.
-
-## Key Directories
-
-### Current Structure (Phase 1 ✅ + Phase 2 ✅)
-- `references/`: Project documentation and tool references
-- `data/`: Raw and processed data files (git-ignored, contains sample parquet files and extraction state)
-- `src/`: Source code for CLI tools and data functions
-  - `cli.py`: Main CLI interface with Click commands
-  - `nfl_explorer.py`: NFL data exploration logic (19 datasets supported)
-  - `parquet_reader.py`: Parquet file reading and analysis
-  - `config_loader.py`: YAML configuration loader with validation
-  - `nfl_extractor.py`: Production data extraction with retry logic and validation (NEW)
-  - `extraction_manager.py`: Incremental extraction and state management (NEW)
-- `configs/`: Dataset extraction configurations
-  - `datasets/`: YAML configuration files for all 19 NFL datasets
-- `tests/`: Comprehensive test files for all components (117 test cases)
-  - `test_cli.py`: CLI command tests with mocking
-  - `test_nfl_explorer.py`: NFLExplorer functionality tests
-  - `test_parquet_reader.py`: ParquetReader tests with temporary files
-  - `test_config_loader.py`: Configuration system tests
-  - `test_nfl_extractor.py`: Production extraction tests
-  - `test_extraction_manager.py`: Incremental extraction tests
-  - `test_cli_extract.py`: CLI extraction command tests (NEW)
-- `.pre-commit-config.yaml`: Pre-commit hooks configuration
-- `pyproject.toml`: Project dependencies and tool configurations
-- `README.md`: Complete usage documentation and examples
-
-### Current Structure (Phase 4 ✅ Complete - Production Ready)
-- `dbt/`: ✅ dbt models and configurations (staging models + DuckLake integration working)
-- `nfl_dagster/`: ✅ Orchestration assets and schedules (webserver + DuckLake assets operational)
-- `postgres/`: ✅ Local PostgreSQL instance for DuckLake catalog
-- `scripts/`: ✅ Validation, testing, DuckLake management, and production operations scripts
-- `docker/`: ✅ Multi-service Docker containers with production configurations
-- `ansible/`: ✅ Infrastructure as code with deployment automation and security hardening
-- `monitoring/`: ✅ Prometheus + Grafana configurations with comprehensive dashboards
-- `.github/workflows/`: ✅ CI/CD pipeline with automated testing and deployment
-- `docker-compose.yml` & `docker-compose.prod.yml`: ✅ Container orchestration
-- `PRODUCTION_DEPLOYMENT_GUIDE.md`: ✅ Complete production deployment documentation
-- `DUCKLAKE_INTEGRATION.md`: ✅ Complete DuckLake integration documentation
-- `FIXES_APPLIED.md`: ✅ Documentation of recent system improvements
-
-### Future Directories (Phase 5+)
-- `k8s/`: Kubernetes manifests for multi-cloud deployment
-- `terraform/`: Infrastructure provisioning automation
-
-## Enhanced CLI Commands (Phase 2 ✅)
-
-### Production Data Extraction CLI
-The CLI now includes comprehensive `extract` commands for production data extraction:
-
-#### Single Dataset Extraction
-```bash
-# Extract a single dataset for a specific year
-uv run python -m src.cli extract dataset pbp --year 2023
-
-# Extract non-year dataset with validation
-uv run python -m src.cli extract dataset team_desc --verbose
-
-# Extract without saving to disk
-uv run python -m src.cli extract dataset weekly --year 2023 --no-save
+### Current Implementation
+```
+├── src/                    # Core Python modules
+│   ├── cli.py             # Click-based CLI interface
+│   ├── nfl_explorer.py    # Data exploration logic
+│   ├── nfl_extractor.py   # Production extraction
+│   ├── ducklake_manager.py # DuckLake CLI integration
+│   └── api/               # FastAPI server
+├── dbt/                   # dbt data warehouse
+│   ├── models/staging/    # 4 staging models
+│   ├── models/intermediate/ # 2 enhanced models (17/17 tests)
+│   └── INTERMEDIATE_MODELS.md # Detailed documentation
+├── nfl_dagster/          # Orchestration assets
+├── visualizations/       # Streamlit + Evidence dashboards
+├── tests/                # Comprehensive test suite (94% success)
+├── configs/              # YAML dataset configurations
+└── scripts/              # Validation and demo scripts
 ```
 
-#### Multi-Year Extraction
-```bash
-# Extract multiple years at once
-uv run python -m src.cli extract multiple pbp --years 2020,2021,2022,2023
+### Key Documentation
+- `README.md`: Complete usage guide
+- `dbt/INTERMEDIATE_MODELS.md`: Enhanced models documentation
+- `PRODUCTION_DEPLOYMENT_GUIDE.md`: Enterprise deployment
+- `DUCKLAKE_INTEGRATION.md`: Time travel & versioning
 
-# Multi-year with custom options
-uv run python -m src.cli extract multiple seasonal --years 2018,2019,2020 --verbose
-```
+## NFL Data Reference
 
-#### Incremental Processing
-```bash
-# Smart incremental extraction (skips current data)
-uv run python -m src.cli extract incremental pbp
+### Supported Datasets (19 total)
+**Game-Level Data:**
+- `pbp`: Play-by-play (1999+) - Primary analytics source
+- `schedules`: Game schedules (1999+) - Results & metadata
+- `weekly`: Player weekly stats (1999+) - Fantasy & performance
+- `seasonal`: Season totals (1999+) - Aggregate performance
 
-# Incremental with specific years and custom age threshold
-uv run python -m src.cli extract incremental weekly --years 2020,2021,2022 --max-age-days 7
+**Reference Data:**
+- `team_desc`: Team information (static) - Conferences & divisions
+- `players`: Player profiles (static) - Positions & identifiers
 
-# Force refresh all data regardless of age
-uv run python -m src.cli extract incremental schedules --force
-```
+**Advanced Metrics:**
+- `qbr`: QB ratings (2006+), `ngs_data`: Next Gen Stats (2016+)
+- `injuries`: Injury reports (2009+), `depth_charts`: Rosters (2001+)
 
-#### Status and Management
-```bash
-# Overall extraction status
-uv run python -m src.cli extract status
+*See complete dataset list in `src/nfl_explorer.py`*
 
-# Status for specific dataset
-uv run python -m src.cli extract status pbp --verbose
+## Configuration System
 
-# Cleanup old extractions
-uv run python -m src.cli extract cleanup --max-age-days 30 --verbose
-
-# Dry run cleanup (preview only)
-uv run python -m src.cli extract cleanup --dry-run
-```
-
-**CLI Features:**
-- **Rich Progress Bars**: Visual progress indicators during extraction
-- **Formatted Tables**: Beautiful status reports and extraction summaries
-- **Error Handling**: Comprehensive error messages with verbose debugging
-- **Interactive Output**: Real-time status updates and success confirmations
-
-## Production Data Extraction (Phase 2 ✅)
-
-### NFLDataExtractor - Production Extraction Engine
-Robust production-ready data extraction with comprehensive error handling:
-
-```python
-from src.nfl_extractor import NFLDataExtractor
-
-# Initialize extractor
-extractor = NFLDataExtractor()
-
-# Extract single dataset with full capabilities
-data, metadata = extractor.extract_dataset(
-    dataset_name='pbp',
-    year=2023,
-    validate=True,
-    save_to_disk=True
-)
-
-# Extract multiple years
-results = extractor.extract_multiple_years(
-    dataset_name='weekly',
-    years=[2020, 2021, 2022],
-    validate=True,
-    save_to_disk=True
-)
-```
-
-**Key Features:**
-- **Retry Logic**: Configurable retry attempts with exponential backoff
-- **Data Validation**: Validates required columns, row counts, and data quality
-- **File Management**: Automatic directory creation and parquet file generation
-- **Error Handling**: Comprehensive error capture and logging
-- **Metadata Tracking**: Detailed extraction metrics and timing information
-
-### ExtractionManager - Incremental Processing
-Smart incremental extraction with state management:
-
-```python
-from src.extraction_manager import ExtractionManager
-
-# Initialize manager
-manager = ExtractionManager()
-
-# Incremental extraction (skips already-extracted data)
-summary = manager.extract_incremental(
-    dataset_name='pbp',
-    years=[2020, 2021, 2022, 2023],
-    force_refresh=False,
-    max_age_days=1
-)
-
-# Get extraction status
-status = manager.get_extraction_summary('pbp')
-```
-
-**Key Features:**
-- **State Tracking**: JSON-based state file tracking all extractions
-- **Incremental Processing**: Only extracts missing or stale data
-- **Age-based Refresh**: Configurable data freshness requirements
-- **Cleanup Management**: Automatic cleanup of old extractions
-- **Status Reporting**: Comprehensive extraction summaries and statistics
-
-### Data Partitioning & Storage
-Configurable partitioning scheme based on dataset requirements:
-- **Year-based datasets**: `data/{dataset}/{year}/etl_date={etl_date}/data.parquet`
-- **Static datasets**: `data/{dataset}/etl_date={etl_date}/data.parquet`
-- **Compression**: Snappy compression for optimal performance
-- **Format**: Apache Parquet for analytics-ready storage
-
-## Configuration System (Phase 2 ✅)
-
-### Dataset Configuration Management
-The project now includes a comprehensive YAML-based configuration system for all 19 NFL datasets:
-
-- **Individual YAML files** for each dataset in `configs/datasets/`
-- **Validation system** ensures configuration integrity
-- **Dynamic path generation** for year-based and ETL-date partitioning
-- **Dataset metadata** including start years, data types, and extraction parameters
-
-### Configuration Structure
-Each dataset configuration includes:
-```yaml
-name: dataset_name
-description: "Human-readable description"
-function_name: nfl_data_py_function_name
-start_year: 1999  # or null for no year limitation
-requires_year: true/false
-data_type: category (e.g., game_level, player_weekly)
-partition_by: year | etl_date_only
-validation:
-  required_columns: [list of expected columns]
-  expected_size_mb: estimated file size
-extraction:
-  timeout_seconds: API timeout
-  retry_attempts: number of retries
-output:
-  file_format: parquet
-  compression: snappy
-  path_template: "data/{dataset}/{year}/etl_date={etl_date}/data.parquet"
-```
-
-### Using the Configuration System
+### Dataset Configuration (YAML-based)
 ```python
 from src.config_loader import ConfigLoader
 
-# Load all configurations
 loader = ConfigLoader()
-
-# Get specific dataset config
 pbp_config = loader.get_dataset_config('pbp')
-
-# List all datasets
 datasets = loader.list_datasets()
-
-# Get datasets by type
-game_datasets = loader.get_datasets_by_type('game_level')
-
-# Validate year for dataset
-loader.validate_year_for_dataset('pbp', 2023)
-
-# Generate output path
 path = loader.get_output_path('pbp', year=2023, etl_date='2024-01-15')
 ```
 
-## NFL Data Considerations
+### CLI Model Operations Integration
+```python
+from src.ducklake_manager import DuckLakeManager
 
-### Supported Datasets (Phase 1 ✅)
-The CLI tool currently supports all 19 datasets from `nfl_data_py`:
-- **pbp**: Play-by-play data (1999+)
-- **weekly**: Weekly player statistics (1999+)
-- **seasonal**: Seasonal player statistics (1999+)
-- **weekly_rosters**: Weekly team rosters (1999+)
-- **seasonal_rosters**: Seasonal team rosters (1999+)
-- **schedules**: Game schedules (1999+)
-- **team_desc**: Team descriptions and information (no year limit)
-- **officials**: Game officials (2001+)
-- **combine**: NFL Combine results (1987+)
-- **draft_picks**: NFL Draft picks (1936+)
-- **qbr**: Weekly QBR data (2006+)
-- **weekly_pfr**: Pro Football Reference weekly stats (1932+)
-- **seasonal_pfr**: Pro Football Reference seasonal stats (1932+)
-- **injuries**: Player injury reports (2009+)
-- **depth_charts**: Team depth charts (2001+)
-- **snap_counts**: Player snap counts (2012+)
-- **ftn_data**: Fantasy Points allowed data (2018+)
-- **ngs_data**: Next Gen Stats data (2016+)
-- **players**: Player information (no year limit)
+ducklake = DuckLakeManager()
+models = ducklake.list_available_models()
+result = ducklake.materialize_staging_models()
+data = ducklake.query_model("int_team_performance", limit=100)
+```
 
-### Data Processing Guidelines
-- Each NFL dataset has different starting years for historical data
-- Data should be extracted by year and partitioned by `etl_date`
-- Separate folders should exist for each dataset type
-- Configuration files will define extraction parameters for each dataset
-- Year validation is implemented in the CLI tool to prevent invalid requests
+## Development Guidelines
 
-## Environment Setup
+### Code Quality Standards
+- **Python 3.11** required
+- **uv** for dependency management (not pip/conda)
+- **Ruff** for formatting and linting
+- **pytest** with coverage reporting
+- **Pre-commit hooks** for automated quality checks
 
-### Current Setup (Phase 1 ✅)
-- **Python Version**: 3.11 (installed via uv)
-- **Package Manager**: uv for virtual environment and dependency management
-- **Dependencies**: 
-  - Core: click, nfl_data_py, pandas, pyarrow, rich
-  - Dev: pytest, pytest-cov, ruff, pre-commit
-- **Code Quality**: Pre-commit hooks with ruff for automatic formatting and linting
-- **Testing**: pytest with 82% coverage reporting and comprehensive test patterns
-- **Security**: Enhanced .gitignore protecting environment variables, database configs, API keys, and sensitive files
-- **CLI Tool**: Fully functional with rich formatted output and comprehensive error handling
-
-### Deployment Guidelines
-- **Global Tools**: Only Ansible, uv, git, and GitHub CLI should be installed globally
-- **Dependency Management**: All other dependencies managed through uv virtual environments
-- **Environment Variables**: All sensitive configuration must use .env files (git-ignored)
-- **Database Configs**: Database connection strings and configurations must be git-ignored
-- **Infrastructure**: Both dev and prod environments supported through Ansible configurations (Phase 2+)
+### Testing Requirements
+- **94% overall test success rate** maintained
+- **17/17 intermediate model tests** must pass
+- All new models require comprehensive test coverage
+- Integration tests for CLI model operations
 
 ### Security Considerations
-The .gitignore file comprehensively protects:
-- Environment variables (.env*, config files, secrets)
-- Database files and connection strings
-- API keys and credentials (including NFL API keys)
-- Cloud provider configurations (.aws/, .azure/, .gcp/)
-- Infrastructure as code secrets (terraform.tfvars, vault files)
-- Project-specific files (dagster configs, dbt profiles, parquet data files)
+- Environment variables in `.env` files (git-ignored)
+- Database credentials protected
+- API keys excluded from repository
+- Infrastructure secrets managed via Ansible vault
+
+## Troubleshooting
+
+### Common Issues
+**dbt Model Errors:**
+```bash
+# Check compilation
+uv run dbt compile --select tag:intermediate
+
+# Run with debug
+uv run dbt run --select tag:intermediate --debug
+```
+
+**CLI Model Operations:**
+```bash
+# Test DuckLake connection
+uv run python scripts/test_ducklake_integration.py
+
+# Validate model availability
+uv run python -m src.cli models list
+```
+
+**Performance Issues:**
+- Use `--limit` flag for large dataset queries
+- Check DuckDB memory settings in profiles.yml
+- Monitor PostgreSQL catalog performance
+
+---
+
+*For detailed model documentation, see `dbt/INTERMEDIATE_MODELS.md`*  
+*For production deployment, see `PRODUCTION_DEPLOYMENT_GUIDE.md`*
