@@ -1,6 +1,6 @@
 {{ config(
     materialized='table',
-    description='Team performance metrics aggregated by season and week'
+    description='Team performance metrics aggregated by season and week with enhanced analytics'
 ) }}
 
 with pbp_team_stats as (
@@ -15,8 +15,18 @@ with pbp_team_stats as (
         sum(case when play_type = 'pass' then yards_gained else 0 end) as passing_yards,
         sum(case when play_type = 'run' then yards_gained else 0 end) as rushing_yards,
         sum(case when touchdown = 1 then 1 else 0 end) as touchdowns,
+        sum(case when field_goal_attempt = 1 then 1 else 0 end) as field_goal_attempts,
+        sum(case when safety = 1 then 1 else 0 end) as safeties,
         avg(epa) as avg_epa,
         sum(epa) as total_epa,
+        avg(win_probability_added) as avg_wpa,
+        sum(win_probability_added) as total_wpa,
+        sum(case when down = 1 then 1 else 0 end) as first_down_plays,
+        sum(case when down = 2 then 1 else 0 end) as second_down_plays,
+        sum(case when down = 3 then 1 else 0 end) as third_down_plays,
+        sum(case when down = 4 then 1 else 0 end) as fourth_down_plays,
+        sum(case when down = 3 and yards_gained >= yards_to_go then 1 else 0 end) as third_down_conversions,
+        sum(case when down = 4 and yards_gained >= yards_to_go then 1 else 0 end) as fourth_down_conversions,
         count(distinct game_id) as games_played
     from {{ ref('stg_pbp') }}
     where possession_team is not null
@@ -31,6 +41,10 @@ schedule_results as (
         away_team,
         home_score,
         away_score,
+        total,
+        overtime,
+        spread_line,
+        total_line,
         case 
             when home_score > away_score then home_team
             when away_score > home_score then away_team
@@ -39,7 +53,17 @@ schedule_results as (
         case
             when home_score = away_score then 1
             else 0
-        end as is_tie
+        end as is_tie,
+        case
+            when spread_line is not null and home_score is not null and away_score is not null then
+                case when (home_score - away_score) > spread_line then 1 else 0 end
+            else null
+        end as home_team_covered_spread,
+        case
+            when total_line is not null and home_score is not null and away_score is not null then
+                case when (home_score + away_score) > total_line then 1 else 0 end
+            else null
+        end as game_went_over
     from {{ ref('stg_schedules') }}
     where home_score is not null and away_score is not null
 ),
@@ -75,6 +99,16 @@ select
     round(p.pass_plays::float / nullif(p.total_plays, 0), 3) as pass_rate,
     round(p.run_plays::float / nullif(p.total_plays, 0), 3) as run_rate,
     
+    -- Down distribution
+    p.first_down_plays,
+    p.second_down_plays,
+    p.third_down_plays,
+    p.fourth_down_plays,
+    p.third_down_conversions,
+    p.fourth_down_conversions,
+    round(p.third_down_conversions::float / nullif(p.third_down_plays, 0), 3) as third_down_conversion_rate,
+    round(p.fourth_down_conversions::float / nullif(p.fourth_down_plays, 0), 3) as fourth_down_conversion_rate,
+    
     -- Yardage metrics
     p.total_yards,
     p.passing_yards,
@@ -85,17 +119,22 @@ select
     
     -- Scoring and efficiency
     p.touchdowns,
+    p.field_goal_attempts,
+    p.safeties,
     round(p.avg_epa, 4) as avg_epa,
     p.total_epa,
+    round(p.avg_wpa, 4) as avg_wpa,
+    p.total_wpa,
     
-    -- Record
+    -- Record and game results
     coalesce(r.wins, 0) as wins,
     coalesce(r.losses, 0) as losses, 
     coalesce(r.ties, 0) as ties,
+    round(coalesce(r.wins, 0)::float / nullif(coalesce(r.wins, 0) + coalesce(r.losses, 0) + coalesce(r.ties, 0), 0), 3) as win_percentage,
     
     -- Data quality
     p.games_played,
-    current_timestamp() as dbt_loaded_at
+    now() as dbt_loaded_at
     
 from pbp_team_stats p
 left join {{ ref('stg_team_desc') }} t on p.team_id = t.team_id

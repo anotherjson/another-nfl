@@ -4,7 +4,7 @@ version: 2
 
 models:
   - name: int_team_performance
-    description: "Team performance metrics aggregated by season and week"
+    description: "Enhanced team performance metrics aggregated by season and week with advanced analytics"
     config:
       tags: ["intermediate", "team_performance"]
     columns:
@@ -34,9 +34,21 @@ models:
         description: "Average expected points added per play"
         tests:
           - not_null
+      - name: third_down_conversion_rate
+        description: "Third down conversion percentage"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+      - name: win_percentage
+        description: "Win percentage for the season through this week"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
           
   - name: int_player_weekly_stats
-    description: "Weekly player statistics with position-specific metrics"
+    description: "Enhanced weekly player statistics with advanced position-specific metrics and EPA analytics"
     config:
       tags: ["intermediate", "player_stats"]
     columns:
@@ -64,3 +76,27 @@ models:
           - dbt_utils.accepted_range:
               min_value: -10
               max_value: 60
+      - name: fantasy_points_ppr_4wk_avg
+        description: "4-week rolling average of PPR fantasy points"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: -5
+              max_value: 50
+      - name: catch_rate
+        description: "Percentage of targets resulting in receptions"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+      - name: completion_percentage
+        description: "Percentage of pass attempts completed"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+      - name: receiving_epa_per_target
+        description: "Expected points added per receiving target"
+      - name: rushing_epa_per_carry
+        description: "Expected points added per rushing attempt"
+      - name: passing_epa_per_attempt
+        description: "Expected points added per passing attempt"
