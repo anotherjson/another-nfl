@@ -26,6 +26,9 @@ uv run dagster job execute --job nfl_full_critical_pipeline_job
 # Query models via CLI
 uv run python -m src.cli models query int_team_performance --limit 10
 
+# Start dbt staging explorer (pure staging table interface)
+uv run streamlit run pure_staging_explorer.py --server.port 8504
+
 # Start enhanced dashboard (dbt staging models integration)
 cd visualizations/streamlit_app
 uv run streamlit run main_staging.py --server.port 8504
@@ -130,6 +133,13 @@ uv run python -m src.cli extract multiple seasonal --years 2021,2022,2023
 - Air yards analytics and YAC (Yards After Catch) metrics
 
 ### Visualization Stack
+**dbt Staging Explorer** (Pure Staging Interface):
+- **Purpose**: Exclusive dbt staging table exploration and validation
+- **Interface**: Single-page application with zero navigation complexity
+- **Tables**: Auto-detects and deduplicates staging models (pbp, weekly, team_desc, schedules)
+- **Features**: Schema inspection, data preview, smart filtering, CSV export
+- **Launch**: `uv run streamlit run pure_staging_explorer.py --server.port 8504`
+
 **Streamlit Dashboard** (Production Ready - dbt Staging Integration):
 - **Architecture**: Complete refactor using dbt staging models with Dagster monitoring
 - **Data Access**: Type-safe models (`TeamInfo`, `PlayerWeeklyStats`, `GameSchedule`)
