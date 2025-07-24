@@ -59,27 +59,56 @@ class DbtStagingExplorer:
             return False
     
     def get_dbt_staging_tables(self) -> List[str]:
-        """Get only actual dbt staging tables, deduplicated by priority."""
-        # First, create a working pbp table since the original is broken
-        self.ensure_working_pbp_table()
-        
-        # Define table groups with priority (enhanced > ducklake > base)
-        table_groups = {
-            "pbp": ["stg_pbp_enhanced", "pbp_working"],  # Use pbp_working instead of broken stg_pbp
-            "weekly": ["stg_weekly_enhanced", "stg_weekly"], 
-            "team_desc": ["stg_team_desc_enhanced", "stg_team_desc_ducklake", "stg_team_desc"],
-            "schedules": ["stg_schedules_enhanced", "stg_schedules"]
-        }
-        
-        unique_tables = []
-        for group_name, table_variants in table_groups.items():
-            # Find the highest priority table that exists AND works
-            for table in table_variants:
-                if self.table_exists(table) and self.table_is_accessible(table):
-                    unique_tables.append(table)
-                    break  # Take only the first working table
-        
-        return sorted(unique_tables)
+        """Get all actual dbt staging tables from the database."""
+        try:
+            conn = self.get_connection()
+            
+            # Get all tables starting with 'stg_'
+            result = conn.execute("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_name LIKE 'stg_%'
+                AND table_schema = 'main'
+                ORDER BY table_name
+            """).fetchall()
+            
+            staging_tables = [row[0] for row in result]
+            
+            # Filter out duplicates and test tables, prioritize certain versions
+            unique_tables = []
+            seen_base_names = set()
+            
+            # Define priority order (enhanced > ducklake > base)
+            priority_suffixes = ['_enhanced', '_ducklake', '']
+            
+            # First pass: get all base names
+            all_base_names = set()
+            for table in staging_tables:
+                if table.startswith('stg_'):
+                    base_name = table.replace('_enhanced', '').replace('_ducklake', '')
+                    all_base_names.add(base_name)
+            
+            # Second pass: select highest priority version of each base table
+            for base_name in sorted(all_base_names):
+                for suffix in priority_suffixes:
+                    candidate = base_name + suffix
+                    if candidate in staging_tables and self.table_is_accessible(candidate):
+                        unique_tables.append(candidate)
+                        break
+            
+            # Add any remaining staging tables that don't fit the pattern
+            for table in staging_tables:
+                if table not in unique_tables and self.table_is_accessible(table):
+                    # Check if it's not just a variant of an existing table
+                    base_name = table.replace('_enhanced', '').replace('_ducklake', '')
+                    if base_name not in [t.replace('_enhanced', '').replace('_ducklake', '') for t in unique_tables]:
+                        unique_tables.append(table)
+            
+            return sorted(unique_tables)
+            
+        except Exception as e:
+            st.error(f"Error getting staging tables: {e}")
+            return []
     
     def ensure_working_pbp_table(self):
         """Ensure we have a working pbp table."""
@@ -168,9 +197,40 @@ def main():
     with st.spinner("Checking for dbt staging tables..."):
         staging_tables = explorer.get_dbt_staging_tables()
     
-    # Show data source status
+    # Show data source status with expected vs actual tables
+    expected_staging_models = [
+        'stg_pbp', 'stg_weekly', 'stg_schedules', 'stg_team_desc',
+        'stg_seasonal', 'stg_players', 'stg_weekly_rosters', 'stg_seasonal_rosters',
+        'stg_qbr', 'stg_injuries', 'stg_depth_charts', 'stg_snap_counts', 'stg_ngs_data',
+        'stg_weekly_pfr', 'stg_seasonal_pfr', 'stg_ftn_data', 'stg_officials', 
+        'stg_combine', 'stg_draft_picks'
+    ]
+    
     if staging_tables:
-        st.success(f"🏗️ **Found {len(staging_tables)} dbt staging tables** in DuckDB")
+        # Map found tables to expected base names
+        found_base_names = set()
+        for table in staging_tables:
+            base_name = table.replace('_enhanced', '').replace('_ducklake', '')
+            found_base_names.add(base_name)
+        
+        expected_base_names = set(expected_staging_models)
+        missing_models = expected_base_names - found_base_names
+        
+        if not missing_models:
+            st.success(f"✅ **Complete Coverage: {len(staging_tables)} staging tables found** - All 19 NFL datasets covered!")
+        else:
+            st.warning(f"⚠️ **Found {len(staging_tables)} staging tables** - Missing {len(missing_models)} models: {', '.join(sorted(missing_models))}")
+        
+        # Show summary
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("📊 Available Models", len(staging_tables))
+        with col2:
+            st.metric("🎯 Expected Models", len(expected_staging_models))
+        with col3:
+            coverage_pct = (len(found_base_names) / len(expected_base_names)) * 100
+            st.metric("✅ Coverage", f"{coverage_pct:.0f}%")
+            
     else:
         st.error("❌ **No dbt staging tables found**")
         st.markdown("""

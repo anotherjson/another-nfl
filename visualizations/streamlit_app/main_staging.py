@@ -25,6 +25,7 @@ from data_models import (
     TeamInfo, PlayerWeeklyStats, GameSchedule
 )
 from utils.dagster_monitor import get_pipeline_health_summary
+from pages.advanced_analytics import show_advanced_analytics
 
 # Configure page
 st.set_page_config(
@@ -116,6 +117,7 @@ def main():
         "Team Analysis", 
         "Player Stats",
         "Schedule Analysis",
+        "Advanced Analytics",
         "System Health"
     ])
     
@@ -140,6 +142,8 @@ def main():
         show_player_stats(season_filter)
     elif page == "Schedule Analysis":
         show_schedule_analysis(season_filter)
+    elif page == "Advanced Analytics":
+        show_advanced_analytics()
     elif page == "System Health":
         show_system_health()
 

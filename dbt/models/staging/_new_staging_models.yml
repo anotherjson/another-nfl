@@ -1,0 +1,268 @@
+version: 2
+
+models:
+  # Injury Analytics Models
+  - name: stg_injuries
+    description: "Staging table for NFL injury reports with comprehensive player health tracking"
+    columns:
+      - name: player_id
+        description: "Unique identifier for the player"
+        tests:
+          - not_null
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2009
+              max_value: 2030
+      - name: team
+        description: "Player's team abbreviation"
+        tests:
+          - not_null
+      - name: report_status
+        description: "Injury report status"
+        tests:
+          - accepted_values:
+              values: ['Out', 'Doubtful', 'Questionable', 'Probable', 'Full']
+
+  - name: stg_depth_charts
+    description: "Staging table for team depth charts and position assignments"
+    columns:
+      - name: player_id
+        description: "Unique identifier for the player"
+        tests:
+          - not_null
+      - name: team
+        description: "Team abbreviation"
+        tests:
+          - not_null
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2001
+              max_value: 2030
+      - name: position
+        description: "Player position"
+        tests:
+          - not_null
+
+  - name: stg_snap_counts
+    description: "Staging table for player snap count participation rates"
+    columns:
+      - name: player_id
+        description: "Unique identifier for the player"
+        tests:
+          - not_null
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2012
+              max_value: 2030
+      - name: week
+        description: "Week number"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 22
+      - name: offense_pct
+        description: "Percentage of offensive snaps played"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+              inclusive: true
+
+  - name: stg_qbr
+    description: "Staging table for quarterback rating (QBR) data"
+    columns:
+      - name: player_id
+        description: "Unique identifier for the player"
+        tests:
+          - not_null
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2006
+              max_value: 2030
+      - name: position
+        description: "Player position (should be QB)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['QB']
+      - name: qbr_total
+        description: "Total QBR rating"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+              inclusive: true
+
+  - name: stg_ngs_data
+    description: "Staging table for Next Gen Stats advanced metrics"
+    columns:
+      - name: player_id
+        description: "Unique identifier for the player"
+        tests:
+          - not_null
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2016
+              max_value: 2030
+      - name: position
+        description: "Player position"
+        tests:
+          - not_null
+
+  # Roster Management Models
+  - name: stg_weekly_rosters
+    description: "Staging table for weekly team rosters"
+    columns:
+      - name: player_id
+        description: "Unique identifier for the player"
+        tests:
+          - not_null
+      - name: team
+        description: "Team abbreviation"
+        tests:
+          - not_null
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1999
+              max_value: 2030
+      - name: week
+        description: "Week number"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 22
+
+  - name: stg_seasonal_rosters
+    description: "Staging table for seasonal team rosters"
+    columns:
+      - name: player_id
+        description: "Unique identifier for the player"
+        tests:
+          - not_null
+      - name: team
+        description: "Team abbreviation"
+        tests:
+          - not_null
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1999
+              max_value: 2030
+
+  # Pro Football Reference Models
+  - name: stg_weekly_pfr
+    description: "Staging table for Pro Football Reference weekly stats"
+    columns:
+      - name: player_id
+        description: "Unique identifier for the player"
+        tests:
+          - not_null
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+      - name: week
+        description: "Week number"
+        tests:
+          - not_null
+
+  - name: stg_seasonal_pfr
+    description: "Staging table for Pro Football Reference seasonal stats"
+    columns:
+      - name: player_id
+        description: "Unique identifier for the player"
+        tests:
+          - not_null
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+
+  # Supplementary Data Models
+  - name: stg_ftn_data
+    description: "Staging table for Fantasy Points allowed data"
+    columns:
+      - name: team
+        description: "Team abbreviation"
+        tests:
+          - not_null
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2018
+              max_value: 2030
+
+  - name: stg_officials
+    description: "Staging table for game officials and crew assignments"
+    columns:
+      - name: game_id
+        description: "Unique identifier for the game"
+        tests:
+          - not_null
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2001
+              max_value: 2030
+
+  - name: stg_combine
+    description: "Staging table for NFL Combine results and measurements"
+    columns:
+      - name: player_id
+        description: "Unique identifier for the player"
+        tests:
+          - not_null
+      - name: combine_year
+        description: "Year of NFL Combine"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 1987
+              max_value: 2030
+
+  - name: stg_draft_picks
+    description: "Staging table for NFL Draft picks and selections"
+    columns:
+      - name: draft_year
+        description: "Year of NFL Draft"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1936
+              max_value: 2030
+      - name: round
+        description: "Draft round"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 7
+      - name: team
+        description: "Drafting team abbreviation"
+        tests:
+          - not_null

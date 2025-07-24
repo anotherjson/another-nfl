@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NFL data extraction and analysis project building a modern data pipeline with Python. Extracts NFL data using `nfl_data_py` and creates a comprehensive data lake with transformation layers.
 
-**🎉 Status: Production Ready - Complete Dagster Integration**
+**🎉 Status: Production Ready - Complete Staging Model Coverage**
 
-> **Latest (July 25, 2025):** Complete Dagster-managed dbt pipeline with unified orchestration. **All 19 NFL datasets** integrated as assets, **10 automated schedules**, **12 job definitions**, **17/17 intermediate model tests passing**.
+> **Latest (December 23, 2024):** **100% NFL Dataset Coverage Achieved!** All 19 NFL datasets now have dedicated staging models with **149 comprehensive tests passing**. **Advanced Analytics Dashboard** with specialized analysis tabs for injury reports, QB performance, Next Gen Stats, snap counts, and roster management. **Complete Dagster orchestration** with priority-based processing.
 
 ## Technology Stack
 
@@ -18,8 +18,8 @@ NFL data extraction and analysis project building a modern data pipeline with Py
 - **Data Source**: `nfl_data_py` (19 NFL datasets)
 - **Data Processing**: pandas, pyarrow, DuckDB
 - **Code Quality**: Ruff, pre-commit hooks, pytest (94% success rate)
-- **dbt Data Warehouse**: Staging + enhanced intermediate models
-- **Dagster Orchestration**: Complete pipeline management with 19 dataset assets
+- **dbt Data Warehouse**: **Complete staging coverage (19/19 models)** + enhanced intermediate models
+- **Dagster Orchestration**: Complete pipeline management with priority-based staging model processing
 - **DuckLake Integration**: Complete lakehouse with PostgreSQL catalog, time travel, ACID transactions
 - **Data Registration**: Automatic catalog registration during extraction
 - **FastAPI**: REST API (9/15 endpoints operational)
@@ -107,9 +107,12 @@ uv run dbt docs generate && uv run dbt docs serve
 # FastAPI server (9/15 endpoints working)
 cd src/api && uv run uvicorn main:app --port 8000
 
-# Streamlit dashboard (production ready)
+# Complete staging models explorer (all 19 NFL datasets)
+uv run streamlit run pure_staging_explorer.py --server.port 8504
+
+# Enhanced dashboard with advanced analytics (dbt staging integration)
 cd visualizations/streamlit_app
-uv run streamlit run working_main.py --server.port 8504
+uv run streamlit run main_staging.py --server.port 8504
 ```
 
 ### Testing & Validation

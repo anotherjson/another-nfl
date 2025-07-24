@@ -337,6 +337,69 @@ def dbt_medium_priority_staging_models(
     }
 
 
+@multi_asset(
+    outs={
+        "stg_weekly_pfr": AssetOut(description="Staging Pro Football Reference weekly stats"),
+        "stg_seasonal_pfr": AssetOut(description="Staging Pro Football Reference seasonal stats"),
+        "stg_ftn_data": AssetOut(description="Staging Fantasy Points allowed data"),
+        "stg_officials": AssetOut(description="Staging game officials data"),
+        "stg_combine": AssetOut(description="Staging NFL Combine results"),
+        "stg_draft_picks": AssetOut(description="Staging NFL Draft picks"),
+    },
+    ins={
+        "weekly_pfr_raw": AssetIn("weekly_pfr_raw"),
+        "seasonal_pfr_raw": AssetIn("seasonal_pfr_raw"),
+        "ftn_data_raw": AssetIn("ftn_data_raw"),
+        "officials_raw": AssetIn("officials_raw"),
+        "combine_raw": AssetIn("combine_raw"),
+        "draft_picks_raw": AssetIn("draft_picks_raw"),
+    },
+    group_name="dbt_staging_low_priority"
+)
+def dbt_low_priority_staging_models(
+    context: AssetExecutionContext,
+    dbt: DbtResource,
+    ducklake: DuckLakeResource,
+    weekly_pfr_raw,
+    seasonal_pfr_raw,
+    ftn_data_raw,
+    officials_raw,
+    combine_raw,
+    draft_picks_raw,
+) -> Dict:
+    """Run low priority dbt staging models."""
+    
+    low_priority_models = [
+        "stg_weekly_pfr",
+        "stg_seasonal_pfr",
+        "stg_ftn_data",
+        "stg_officials",
+        "stg_combine",
+        "stg_draft_picks"
+    ]
+    
+    result = _run_dbt_models(
+        models=low_priority_models,
+        context=context,
+        dbt=dbt,
+        ducklake=ducklake
+    )
+    
+    base_metadata = {
+        "execution_success": MetadataValue.bool(result["success"]),
+        "execution_time": MetadataValue.text(result["execution_time"]),
+    }
+    
+    return {
+        "stg_weekly_pfr": Output({"model": "stg_weekly_pfr", "status": "success" if result["success"] else "failed"}, metadata=base_metadata),
+        "stg_seasonal_pfr": Output({"model": "stg_seasonal_pfr", "status": "success" if result["success"] else "failed"}, metadata=base_metadata),
+        "stg_ftn_data": Output({"model": "stg_ftn_data", "status": "success" if result["success"] else "failed"}, metadata=base_metadata),
+        "stg_officials": Output({"model": "stg_officials", "status": "success" if result["success"] else "failed"}, metadata=base_metadata),
+        "stg_combine": Output({"model": "stg_combine", "status": "success" if result["success"] else "failed"}, metadata=base_metadata),
+        "stg_draft_picks": Output({"model": "stg_draft_picks", "status": "success" if result["success"] else "failed"}, metadata=base_metadata),
+    }
+
+
 @asset(
     description="Run all existing intermediate dbt models that depend on staging",
     ins={
@@ -380,8 +443,14 @@ def dbt_intermediate_models(
 @asset(
     description="Comprehensive validation of all staging models and dependencies",
     deps=[
+        # Critical staging models
         "stg_pbp", "stg_weekly", "stg_schedules", "stg_team_desc",
-        "stg_seasonal", "stg_players", "stg_weekly_rosters", "stg_seasonal_rosters"
+        # High priority staging models
+        "stg_seasonal", "stg_players", "stg_weekly_rosters", "stg_seasonal_rosters",
+        # Medium priority staging models
+        "stg_qbr", "stg_injuries", "stg_depth_charts", "stg_snap_counts", "stg_ngs_data",
+        # Low priority staging models
+        "stg_weekly_pfr", "stg_seasonal_pfr", "stg_ftn_data", "stg_officials", "stg_combine", "stg_draft_picks"
     ],
     group_name="dbt_staging_validation"
 )

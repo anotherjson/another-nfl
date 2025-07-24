@@ -98,6 +98,133 @@ class StagingDataService:
         """Get top fantasy performers with optional filters."""
         players = _self.get_player_stats(season=season, position_group=position_group, limit=500)
         
+    # New methods for additional staging models
+    @st.cache_data(ttl=1800)  # 30 minute cache
+    def get_injury_reports(_self,
+                          season: Optional[int] = None,
+                          week: Optional[int] = None,
+                          team: Optional[str] = None,
+                          limit: int = 1000) -> pd.DataFrame:
+        """Get injury reports from staging model."""
+        filters = {}
+        if season:
+            filters['season'] = season
+        if week:
+            filters['week'] = week
+        if team:
+            filters['team'] = team
+            
+        return _self.dbt_connector.query_staging_model(
+            'stg_injuries',
+            filters=filters,
+            limit=limit
+        )
+    
+    @st.cache_data(ttl=1800)
+    def get_depth_charts(_self,
+                        season: Optional[int] = None,
+                        week: Optional[int] = None,
+                        team: Optional[str] = None,
+                        position: Optional[str] = None,
+                        limit: int = 1000) -> pd.DataFrame:
+        """Get depth chart data from staging model."""
+        filters = {}
+        if season:
+            filters['season'] = season
+        if week:
+            filters['week'] = week
+        if team:
+            filters['team'] = team
+        if position:
+            filters['position'] = position
+            
+        return _self.dbt_connector.query_staging_model(
+            'stg_depth_charts',
+            filters=filters,
+            limit=limit
+        )
+    
+    @st.cache_data(ttl=600)  # 10 minute cache for snap counts
+    def get_snap_counts(_self,
+                       season: Optional[int] = None,
+                       week: Optional[int] = None,
+                       team: Optional[str] = None,
+                       limit: int = 1000) -> pd.DataFrame:
+        """Get snap count data from staging model."""
+        filters = {}
+        if season:
+            filters['season'] = season
+        if week:
+            filters['week'] = week
+        if team:
+            filters['team'] = team
+            
+        return _self.dbt_connector.query_staging_model(
+            'stg_snap_counts',
+            filters=filters,
+            limit=limit
+        )
+    
+    @st.cache_data(ttl=600)
+    def get_qbr_data(_self,
+                    season: Optional[int] = None,
+                    week: Optional[int] = None,
+                    limit: int = 500) -> pd.DataFrame:
+        """Get QBR data from staging model."""
+        filters = {}
+        if season:
+            filters['season'] = season
+        if week:
+            filters['week'] = week
+            
+        return _self.dbt_connector.query_staging_model(
+            'stg_qbr',
+            filters=filters,
+            limit=limit
+        )
+    
+    @st.cache_data(ttl=1800)
+    def get_ngs_data(_self,
+                    season: Optional[int] = None,
+                    week: Optional[int] = None,
+                    position: Optional[str] = None,
+                    limit: int = 1000) -> pd.DataFrame:
+        """Get Next Gen Stats data from staging model."""
+        filters = {}
+        if season:
+            filters['season'] = season
+        if week:
+            filters['week'] = week
+        if position:
+            filters['position'] = position
+            
+        return _self.dbt_connector.query_staging_model(
+            'stg_ngs_data',
+            filters=filters,
+            limit=limit
+        )
+    
+    @st.cache_data(ttl=3600)  # 1 hour cache for roster data
+    def get_weekly_rosters(_self,
+                          season: Optional[int] = None,
+                          week: Optional[int] = None,
+                          team: Optional[str] = None,
+                          limit: int = 2000) -> pd.DataFrame:
+        """Get weekly roster data from staging model."""
+        filters = {}
+        if season:
+            filters['season'] = season
+        if week:
+            filters['week'] = week
+        if team:
+            filters['team'] = team
+            
+        return _self.dbt_connector.query_staging_model(
+            'stg_weekly_rosters',
+            filters=filters,
+            limit=limit
+        )
+        
         # Sort by fantasy points PPR and take top performers
         sorted_players = sorted(players, 
                                key=lambda p: p.fantasy_points_ppr or 0, 
