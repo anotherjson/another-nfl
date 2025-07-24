@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NFL data extraction and analysis project building a modern data pipeline with Python. Extracts NFL data using `nfl_data_py` and creates a comprehensive data lake with transformation layers.
 
-**🎉 Status: DuckLake Integration Complete - Production Ready**
+**🎉 Status: Production Ready - Complete Lakehouse Integration**
 
-> **Latest (July 24, 2025):** **MAJOR UPDATE** - Complete DuckLake integration implemented! Unified lakehouse architecture with PostgreSQL catalog, time travel queries, automatic data registration, and CLI model operations. **All 6/6 health checks passing**, **dbt compilation successful**, **CLI queries operational**.
+> **Latest (July 24, 2025):** Complete DuckLake lakehouse integration with unified catalog, time travel queries, and CLI model operations. **All 6/6 health checks passing**, **17/17 intermediate model tests passing**, **94% overall test success rate**.
 
 ## Technology Stack
 

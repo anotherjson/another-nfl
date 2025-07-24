@@ -10,9 +10,8 @@ This directory contains documentation and configuration files specifically for C
 - **`CLI_REFERENCE.md`** - Comprehensive CLI command reference
 
 ### DuckLake Integration Documentation  
-- **`DUCKLAKE_INTEGRATION_FIX_PLAN.md`** - Original detailed implementation plan
-- **`DUCKLAKE_INTEGRATION_COMPLETE.md`** - Implementation completion summary and validation
 - **`ENHANCED_INTEGRATION_GUIDE.md`** - Enhanced integration features guide
+- *Note: Main DuckLake documentation consolidated into `/DUCKLAKE_INTEGRATION.md`*
 
 ### Project Accomplishments
 - **`PHASE5_ACCOMPLISHMENTS.md`** - Phase 5 project milestones and achievements
