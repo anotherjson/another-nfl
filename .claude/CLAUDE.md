@@ -279,5 +279,5 @@ uv run python -c "from src.ducklake_manager import DuckLakeManager; print(DuckLa
 ---
 
 *For detailed model documentation, see `dbt/INTERMEDIATE_MODELS.md`*  
-*For DuckLake integration details, see `DUCKLAKE_INTEGRATION_FIX_PLAN.md`*  
+*For DuckLake integration details, see `DUCKLAKE_INTEGRATION_FIX_PLAN.md` (same directory)*  
 *For production deployment, see `PRODUCTION_DEPLOYMENT_GUIDE.md`*

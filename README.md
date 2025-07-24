@@ -244,7 +244,7 @@ tables = ducklake.get_catalog_tables()
 
 ## 📚 Documentation
 
-- **`CLAUDE.md`**: Development guide and commands
+- **`.claude/CLAUDE.md`**: Development guide and commands for Claude Code
 - **`dbt/INTERMEDIATE_MODELS.md`**: Detailed model documentation
 - **`PRODUCTION_DEPLOYMENT_GUIDE.md`**: Enterprise deployment
 - **`DUCKLAKE_INTEGRATION.md`**: Time travel and versioning
