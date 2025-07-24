@@ -10,7 +10,8 @@
 
 ### Development & Operations
 - **[.claude/CLAUDE.md](.claude/CLAUDE.md)** - Complete Dagster-managed pipeline guide (Claude Code)
-- **[DAGSTER_DBT_REFACTOR_SUMMARY.md](DAGSTER_DBT_REFACTOR_SUMMARY.md)** - Complete refactor implementation (NEW)
+- **[DAGSTER_DBT_REFACTOR_SUMMARY.md](DAGSTER_DBT_REFACTOR_SUMMARY.md)** - Complete refactor implementation
+- **[visualizations/streamlit_app/README_STAGING_INTEGRATION.md](visualizations/streamlit_app/README_STAGING_INTEGRATION.md)** - Streamlit dbt staging models integration (NEW)
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Problem-solving and debugging guide
 - **[OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)** - Production operations procedures
 
@@ -31,6 +32,7 @@
 
 ### Visualization
 - **[visualizations/README.md](visualizations/README.md)** - Dashboard architecture and usage
+- **[visualizations/streamlit_app/README_STAGING_INTEGRATION.md](visualizations/streamlit_app/README_STAGING_INTEGRATION.md)** - Enhanced Streamlit dashboard with dbt integration
 
 ### Tools & References  
 - **[references/tool_references.md](references/tool_references.md)** - External tool documentation
@@ -70,26 +72,27 @@
 
 ## 📝 Documentation Updates Summary
 
-**Latest Update:** July 25, 2025
+**Latest Update:** July 24, 2025
 
-### Dagster Integration Documentation (NEW):
-- **Added `DAGSTER_DBT_REFACTOR_SUMMARY.md`**: Complete implementation guide for Dagster-managed pipeline
-- **Updated `README.md`**: New Dagster orchestration commands and workflow
-- **Updated `ARCHITECTURE.md`**: Complete pipeline flow with asset dependencies
-- **Updated `.claude/CLAUDE.md`**: Primary Dagster commands with legacy CLI reference
-- **Updated `QUICK_REFERENCE.md`**: Dagster-first workflow with essential commands
+### Streamlit dbt Staging Models Integration (NEW):
+- **Added `visualizations/streamlit_app/README_STAGING_INTEGRATION.md`**: Complete implementation guide for Streamlit dbt integration
+- **Updated `README.md`**: New enhanced dashboard commands and features
+- **Updated `DOCUMENTATION_INDEX.md`**: Added Streamlit integration documentation links
+- **Complete Refactor**: Production-ready dashboard with dbt staging models
 
-### Key Changes:
-- **New Architecture**: Complete Dagster management of all 19 NFL datasets
-- **Updated Commands**: Dagster-first approach with legacy CLI still available
-- **Production Focus**: 10 automated schedules + 12 job definitions documented
-- **Asset Management**: Priority-based processing (critical/high/medium/low)
-- **Comprehensive Coverage**: All documentation updated to reflect new pipeline
+### Key Features Delivered:
+- **Deep Dagster Integration**: Real-time pipeline monitoring and asset status tracking
+- **Type-Safe Data Models**: Structured models with validation (`TeamInfo`, `PlayerWeeklyStats`, etc.)
+- **Intelligent Caching**: Multi-level caching strategy (30min/10min/1min TTL)
+- **Health Monitoring**: Comprehensive system health checks and data lineage visualization
+- **Advanced Analytics**: Enhanced fantasy football and team performance analysis
+- **Production Architecture**: Error handling, fallback mechanisms, and recovery systems
 
 ### Implementation Status:
-- ✅ **Phase 6 Complete**: Full Dagster integration with unified orchestration
-- ✅ **All 19 NFL datasets** managed as Dagster assets
-- ✅ **Production schedules** with automated processing
+- ✅ **Streamlit Integration Complete**: Full migration from parquet to dbt staging models
+- ✅ **All Dashboard Pages Refactored**: Team analysis, fantasy dashboard, system health
+- ✅ **Production Ready**: Comprehensive error handling and monitoring
 - ✅ **17/17 intermediate model tests** still passing
+- ✅ **Zero Parquet Dependencies**: Complete migration to staging models
 
-*Documentation now reflects complete Dagster-managed architecture.*
+*Dashboard now showcases modern data engineering with dbt + Dagster integration.*

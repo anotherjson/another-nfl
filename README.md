@@ -4,7 +4,7 @@ Production-grade data warehouse and analytics pipeline for NFL data processing. 
 
 **🎉 Status: Production Ready**
 
-> **Latest (July 25, 2025):** Complete Dagster-managed dbt pipeline with unified orchestration. **All 19 NFL datasets** integrated, **10 automated schedules**, **12 job definitions**, **17/17 intermediate model tests passing**.
+> **Latest (July 24, 2025):** Complete Streamlit dashboard refactor with dbt staging models integration. **Deep Dagster monitoring**, **intelligent caching**, **type-safe data models**, and **comprehensive health monitoring**. All 19 NFL datasets integrated with **10 automated schedules**, **12 job definitions**, **17/17 intermediate model tests passing**.
 
 ## ⚡ Quick Start
 
@@ -26,9 +26,9 @@ uv run dagster job execute --job nfl_full_critical_pipeline_job
 # Query models via CLI
 uv run python -m src.cli models query int_team_performance --limit 10
 
-# Start dashboard
+# Start enhanced dashboard (dbt staging models integration)
 cd visualizations/streamlit_app
-uv run streamlit run working_main.py --server.port 8504
+uv run streamlit run main_staging.py --server.port 8504
 ```
 
 ## 🏗️ Architecture
@@ -52,7 +52,7 @@ uv run streamlit run working_main.py --server.port 8504
 | **Orchestration** | Dagster (Full Management) | ✅ Production |
 | **Lakehouse** | DuckLake + PostgreSQL | ✅ Production |
 | **API** | FastAPI | ✅ 9/15 endpoints |
-| **Visualization** | Streamlit + Evidence + Grafana | ✅ Production |
+| **Visualization** | Streamlit (dbt Integration) + Evidence + Grafana | ✅ Production |
 | **Testing** | pytest | ✅ 94% success rate |
 
 ## 🚀 Key Features
@@ -74,6 +74,21 @@ uv run dagster job execute --job nfl_seasonal_intensive_job
 # Schedule management
 uv run dagster schedule start daily_critical_data_extraction
 uv run dagster schedule start weekly_high_priority_extraction
+```
+
+### Enhanced Streamlit Dashboard (NEW)
+```bash
+# Start production-ready dashboard with dbt staging integration
+cd visualizations/streamlit_app
+uv run streamlit run main_staging.py --server.port 8504
+
+# Features:
+# - Real-time Dagster pipeline monitoring
+# - Type-safe data models with validation
+# - Intelligent caching (30min/10min/1min TTL)
+# - Comprehensive health checks and data lineage
+# - Advanced fantasy analytics with consistency metrics
+# - Team performance analysis with win rates and scoring
 ```
 
 ### Enhanced CLI Model Operations
@@ -115,11 +130,16 @@ uv run python -m src.cli extract multiple seasonal --years 2021,2022,2023
 - Air yards analytics and YAC (Yards After Catch) metrics
 
 ### Visualization Stack
-**Streamlit Dashboard** (Production Ready):
-- **Overview**: Data metrics and pipeline status
-- **Team Analysis**: Conference/division analytics with charts
-- **Player Stats**: Fantasy tiers and position analysis
-- **Schedule Analysis**: Game patterns and balance metrics
+**Streamlit Dashboard** (Production Ready - dbt Staging Integration):
+- **Architecture**: Complete refactor using dbt staging models with Dagster monitoring
+- **Data Access**: Type-safe models (`TeamInfo`, `PlayerWeeklyStats`, `GameSchedule`)
+- **Caching**: Intelligent multi-level caching (30min/10min/1min TTL)
+- **Monitoring**: Real-time pipeline health and data freshness indicators
+- **Pages**: 
+  - **Overview**: System health, pipeline status, top performers
+  - **Team Analysis**: Conference/division analytics, win rates, scoring differentials
+  - **Fantasy Dashboard**: Advanced player analytics, consistency metrics, tier analysis
+  - **System Health**: Data lineage, model status, manual controls
 
 **API Server** (9/15 endpoints operational):
 ```bash
@@ -171,6 +191,10 @@ uv run dbt docs generate && uv run dbt docs serve
 
 # Dagster development
 uv run dagster dev -f nfl_dagster/definitions.py
+
+# Streamlit dashboard development
+cd visualizations/streamlit_app
+uv run streamlit run main_staging.py --server.port 8504
 ```
 
 ### Project Structure
@@ -185,7 +209,14 @@ uv run dagster dev -f nfl_dagster/definitions.py
 │   ├── models/intermediate/ # 2 enhanced models
 │   └── INTERMEDIATE_MODELS.md # Detailed docs
 ├── tests/                 # 94% test success rate
-├── visualizations/        # Streamlit dashboards
+├── visualizations/        # Enhanced Streamlit dashboards
+│   └── streamlit_app/     # dbt staging models integration
+│       ├── main_staging.py      # Production dashboard
+│       ├── data_models.py       # Type-safe data models
+│       ├── services/            # Business logic layer
+│       ├── utils/               # dbt & Dagster connectors
+│       ├── components/          # Health monitoring
+│       └── pages/               # Dashboard pages
 └── configs/               # YAML configurations
 ```
 
@@ -268,6 +299,7 @@ tables = ducklake.get_catalog_tables()
 ## 📚 Documentation
 
 - **`DAGSTER_DBT_REFACTOR_SUMMARY.md`**: Complete refactor implementation guide
+- **`visualizations/streamlit_app/README_STAGING_INTEGRATION.md`**: Complete Streamlit dbt integration guide (NEW)
 - **`.claude/CLAUDE.md`**: Development guide and commands for Claude Code
 - **`dbt/INTERMEDIATE_MODELS.md`**: Detailed model documentation
 - **`ARCHITECTURE.md`**: Updated enterprise architecture with Dagster integration
