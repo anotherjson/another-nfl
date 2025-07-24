@@ -1,6 +1,6 @@
 {{ config(
     materialized='table',
-    description='Team performance metrics aggregated by season and week with enhanced analytics'
+    tags=['intermediate', 'team_performance']
 ) }}
 
 with pbp_team_stats as (
@@ -132,9 +132,10 @@ select
     coalesce(r.ties, 0) as ties,
     round(coalesce(r.wins, 0)::float / nullif(coalesce(r.wins, 0) + coalesce(r.losses, 0) + coalesce(r.ties, 0), 0), 3) as win_percentage,
     
-    -- Data quality
+    -- Data quality with version tracking
     p.games_played,
-    now() as dbt_loaded_at
+    CURRENT_TIMESTAMP as model_created_at,
+    '{{ run_started_at }}' as dbt_run_timestamp
     
 from pbp_team_stats p
 left join {{ ref('stg_team_desc') }} t on p.team_id = t.team_id

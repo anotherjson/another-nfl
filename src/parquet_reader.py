@@ -37,6 +37,8 @@ class ParquetReader:
             else:
                 return df
 
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File not found: {file_path}")
         except Exception as e:
             raise Exception(f"Failed to read parquet file {file_path}: {str(e)}")
 
@@ -83,6 +85,8 @@ class ParquetReader:
 
             return info
 
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File not found: {file_path}")
         except Exception as e:
             raise Exception(f"Failed to get file info for {file_path}: {str(e)}")
 

@@ -13,6 +13,7 @@ from src.extraction_manager import ExtractionManager
 from src.nfl_explorer import NFLExplorer
 from src.nfl_extractor import NFLDataExtractor
 from src.parquet_reader import ParquetReader
+from src.ducklake_manager import DuckLakeManager
 
 console = Console()
 
@@ -1269,6 +1270,286 @@ def validate_openapi_spec(spec_file):
         sys.exit(1)
     except Exception as e:
         console.print(f"[red]❌ Validation failed: {e}[/red]")
+        sys.exit(1)
+
+
+@main.group()
+def models():
+    """Work with dbt staging models through DuckLake."""
+    pass
+
+
+@models.command("list")
+def list_models():
+    """List all available dbt staging models."""
+    try:
+        ducklake = DuckLakeManager()
+        models = ducklake.list_available_models()
+        
+        table = Table(title="Available dbt Staging Models")
+        table.add_column("Model", style="cyan", no_wrap=True)
+        table.add_column("Description", style="magenta")
+        table.add_column("Schema", style="green", justify="center")
+        table.add_column("Base Table", style="yellow")
+        
+        for model in models:
+            table.add_row(
+                model["name"],
+                model["description"],
+                model["schema"],
+                model["table"]
+            )
+        
+        console.print(table)
+        console.print(f"\n[blue]💡 Use 'models query <model_name>' to query a model[/blue]")
+        console.print(f"[blue]💡 Use 'models materialize' to refresh all staging models[/blue]")
+        
+    except Exception as e:
+        console.print(f"[red]Error listing models: {e}[/red]")
+        sys.exit(1)
+
+
+@models.command("materialize")
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed materialization output")
+def materialize_models(verbose: bool):
+    """Materialize all dbt staging models via Dagster."""
+    try:
+        ducklake = DuckLakeManager()
+        
+        console.print("[blue]🔄 Triggering dbt staging model materialization via Dagster...[/blue]")
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Materializing staging models...", total=None)
+            
+            result = ducklake.materialize_staging_models()
+            progress.update(task, completed=1, total=1)
+        
+        if result["success"]:
+            console.print("[green]✅ Materialization completed successfully![/green]")
+            if verbose and result["stdout"]:
+                console.print(f"\n[cyan]Output:[/cyan]\n{result['stdout']}")
+        else:
+            console.print("[red]❌ Materialization failed![/red]")
+            if result["stderr"]:
+                console.print(f"[red]Error: {result['stderr']}[/red]")
+            sys.exit(1)
+            
+    except Exception as e:
+        console.print(f"[red]Error triggering materialization: {e}[/red]")
+        sys.exit(1)
+
+
+@models.command("query")
+@click.argument("model_name")
+@click.option("--limit", default=10, help="Number of rows to display (default: 10)")
+@click.option("--as-of-date", help="Query as of specific date (YYYY-MM-DD) for time travel")
+@click.option("--show-schema", is_flag=True, help="Show model schema information")
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed error information")
+def query_model(model_name: str, limit: int, as_of_date: str | None, show_schema: bool, verbose: bool):
+    """Query a dbt staging model through DuckLake."""
+    try:
+        ducklake = DuckLakeManager()
+        
+        # Validate model exists
+        try:
+            model_info = ducklake.get_model_info(model_name)
+        except KeyError:
+            available_models = [m["name"] for m in ducklake.list_available_models()]
+            console.print(f"[red]Invalid model: {model_name}[/red]")
+            console.print(f"[yellow]Available models: {', '.join(available_models)}[/yellow]")
+            sys.exit(1)
+        
+        if show_schema:
+            console.print(f"[blue]📋 Schema for {model_name}[/blue]")
+            schema_info = ducklake.get_model_schema(model_name)
+            
+            schema_table = Table(title=f"Schema: {model_name}")
+            schema_table.add_column("Column", style="cyan")
+            schema_table.add_column("Type", style="magenta")
+            
+            for col in schema_info["columns"]:
+                schema_table.add_row(col["column_name"], col["column_type"])
+            
+            console.print(schema_table)
+            console.print()
+        
+        # Build query description
+        query_desc = f"Querying {model_name}"
+        if as_of_date:
+            query_desc += f" as of {as_of_date}"
+        if limit:
+            query_desc += f" (limit {limit} rows)"
+        
+        console.print(f"[blue]🔍 {query_desc}[/blue]")
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Executing query...", total=None)
+            
+            data = ducklake.query_model(model_name, limit=limit, as_of_date=as_of_date)
+            progress.update(task, completed=1, total=1)
+        
+        if data.empty:
+            console.print(f"[yellow]No data found for {model_name}[/yellow]")
+            return
+        
+        # Show time travel info if applicable
+        if as_of_date and hasattr(data, 'attrs') and 'ducklake_version_date' in data.attrs:
+            console.print(f"[cyan]📅 Data version used: {data.attrs['ducklake_version_date']}[/cyan]")
+        
+        console.print(f"\n[green]Results ({len(data)} rows):[/green]")
+        console.print(data.to_string())
+        
+        console.print(f"\n[cyan]Data shape: {data.shape}[/cyan]")
+        console.print(f"[cyan]Columns: {list(data.columns)}[/cyan]")
+        
+    except Exception as e:
+        if verbose:
+            console.print(f"[red]Detailed error: {type(e).__name__}: {e}[/red]")
+            import traceback
+            console.print(f"[red]Traceback:\n{traceback.format_exc()}[/red]")
+        else:
+            console.print(f"[red]Error querying model: {e}[/red]")
+            console.print("[yellow]Use --verbose for detailed error information[/yellow]")
+        sys.exit(1)
+
+
+@models.command("catalog")
+def show_catalog():
+    """Show all tables registered in DuckLake catalog."""
+    try:
+        ducklake = DuckLakeManager()
+        tables = ducklake.get_catalog_tables()
+        
+        if not tables:
+            console.print("[yellow]No tables found in DuckLake catalog[/yellow]")
+            console.print("[blue]💡 Run 'models materialize' to create staging models[/blue]")
+            return
+        
+        table = Table(title="DuckLake Catalog Tables")
+        table.add_column("Schema", style="cyan")
+        table.add_column("Table", style="magenta")
+        table.add_column("Versions", style="green", justify="center")
+        table.add_column("Latest ETL", style="yellow")
+        table.add_column("Total Rows", style="blue", justify="right")
+        table.add_column("Created", style="dim")
+        
+        for t in tables:
+            table.add_row(
+                t["schema_name"],
+                t["table_name"],
+                str(t["version_count"]),
+                str(t["latest_etl_date"]) if t["latest_etl_date"] else "N/A",
+                f"{t['total_rows']:,}" if t['total_rows'] else "0",
+                t["created_at"].strftime("%Y-%m-%d") if t["created_at"] else "N/A"
+            )
+        
+        console.print(table)
+        console.print(f"\n[blue]💡 Use 'models versions <schema>.<table>' to see version history[/blue]")
+        
+    except Exception as e:
+        console.print(f"[red]Error accessing catalog: {e}[/red]")
+        sys.exit(1)
+
+
+@models.command("versions")
+@click.argument("table_name")  # Format: schema.table
+def show_versions(table_name: str):
+    """Show version history for a specific table."""
+    try:
+        if "." not in table_name:
+            console.print("[red]Table name must be in format 'schema.table'[/red]")
+            console.print("[yellow]Example: nfl_raw.pbp[/yellow]")
+            sys.exit(1)
+        
+        schema_name, table = table_name.split(".", 1)
+        
+        ducklake = DuckLakeManager()
+        versions = ducklake.get_table_versions(schema_name, table)
+        
+        if not versions:
+            console.print(f"[yellow]No versions found for {schema_name}.{table}[/yellow]")
+            return
+        
+        table_widget = Table(title=f"Version History: {schema_name}.{table}")
+        table_widget.add_column("Version", style="cyan", justify="center")
+        table_widget.add_column("ETL Date", style="magenta")
+        table_widget.add_column("Rows", style="green", justify="right")
+        table_widget.add_column("File Size", style="yellow", justify="right")
+        table_widget.add_column("Created", style="blue")
+        table_widget.add_column("File Path", style="dim")
+        
+        for v in versions:
+            file_size = f"{v['file_size'] / 1024 / 1024:.1f} MB" if v['file_size'] else "N/A"
+            table_widget.add_row(
+                str(v["version_number"]),
+                str(v["etl_date"]),
+                f"{v['row_count']:,}" if v['row_count'] else "0",
+                file_size,
+                v["created_at"].strftime("%Y-%m-%d %H:%M") if v["created_at"] else "N/A",
+                str(v["file_path"])[-50:] + "..." if len(str(v["file_path"])) > 50 else str(v["file_path"])
+            )
+        
+        console.print(table_widget)
+        console.print(f"\n[blue]💡 Use 'models query <model> --as-of-date YYYY-MM-DD' for time travel[/blue]")
+        
+    except Exception as e:
+        console.print(f"[red]Error getting version history: {e}[/red]")
+        sys.exit(1)
+
+
+@models.command("sql")
+@click.argument("query", required=False)
+@click.option("--file", "-f", help="Read SQL query from file")
+def run_sql(query: str | None, file: str | None):
+    """Run custom SQL query against DuckLake data."""
+    try:
+        if not query and not file:
+            console.print("[red]Either provide a query or use --file to read from file[/red]")
+            console.print("[yellow]Example: models sql 'SELECT * FROM \\'data/team_desc/etl_date=*/data.parquet\\' LIMIT 5'[/yellow]")
+            sys.exit(1)
+        
+        if file:
+            if not Path(file).exists():
+                console.print(f"[red]SQL file not found: {file}[/red]")
+                sys.exit(1)
+            with open(file, "r") as f:
+                query = f.read()
+        
+        ducklake = DuckLakeManager()
+        
+        console.print(f"[blue]🔍 Executing custom SQL query...[/blue]")
+        console.print(f"[dim]Query: {query[:100]}{'...' if len(query) > 100 else ''}[/dim]")
+        
+        with Progress(
+            SpinnerColumn(), 
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Executing query...", total=None)
+            
+            result = ducklake.run_custom_query(query)
+            progress.update(task, completed=1, total=1)
+        
+        if result.empty:
+            console.print("[yellow]Query returned no results[/yellow]")
+            return
+        
+        console.print(f"\n[green]Results ({len(result)} rows):[/green]")
+        console.print(result.to_string())
+        
+        console.print(f"\n[cyan]Data shape: {result.shape}[/cyan]")
+        console.print(f"[cyan]Columns: {list(result.columns)}[/cyan]")
+        
+    except Exception as e:
+        console.print(f"[red]Error executing SQL query: {e}[/red]")
         sys.exit(1)
 
 

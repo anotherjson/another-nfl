@@ -7,6 +7,10 @@ config-version: 2
 # This setting configures which "profile" dbt uses for this project.
 profile: 'nfl_analytics'
 
+# Add on-run-start hook for DuckLake initialization
+on-run-start:
+  - "{{ register_ducklake_sources() }}"
+
 # These configurations specify where dbt should look for different types of files.
 model-paths: ["models"]
 analysis-paths: ["analyses"]

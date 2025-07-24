@@ -148,6 +148,9 @@ class NFLDataExtractor:
                     extraction_metadata["file_size_mb"] = round(
                         file_size_bytes / (1024 * 1024), 2
                     )
+                
+                # Register with DuckLake catalog
+                self._register_with_ducklake(dataset_name, year, str(output_path))
 
             self.logger.info(
                 f"Extraction completed for {dataset_name}: "
@@ -307,6 +310,18 @@ class NFLDataExtractor:
 
         self.logger.info(f"Saved {len(data)} rows to {output_path}")
         return output_path
+    
+    def _register_with_ducklake(self, dataset_name: str, year: int | None, file_path: str) -> None:
+        """Register newly extracted data with DuckLake catalog."""
+        try:
+            from .ducklake_manager import DuckLakeManager
+            ducklake = DuckLakeManager()
+            
+            table_name = f"{dataset_name}_{year}" if year else dataset_name
+            ducklake.register_table("nfl_raw", table_name, file_path)
+            self.logger.info(f"Registered {table_name} with DuckLake catalog")
+        except Exception as e:
+            self.logger.warning(f"Failed to register with DuckLake: {e}")
 
     def extract_multiple_years(
         self,

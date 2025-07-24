@@ -26,6 +26,7 @@ from src.config_loader import ConfigLoader
 from src.advanced_analytics import NFLAnalytics
 from src.realtime_processor import NFLRealtimeProcessor
 from src.api.models import *
+from src.api.models import ServiceStatusInfo
 from src.api.responses import *
 
 # Configure logging
@@ -114,8 +115,24 @@ app.add_middleware(
 async def list_datasets():
     """List all available NFL datasets"""
     try:
-        datasets = nfl_explorer.list_datasets()
-        return [Dataset(**dataset) for dataset in datasets]
+        global config_loader
+        if config_loader is None:
+            config_loader = ConfigLoader()
+        
+        # Get all dataset configs which have complete information
+        dataset_names = config_loader.list_datasets()
+        datasets = []
+        for name in dataset_names:
+            config = config_loader.get_dataset_config(name)
+            if config:
+                datasets.append(Dataset(
+                    name=config.name,
+                    description=config.description,
+                    start_year=config.start_year,
+                    requires_year=config.requires_year,
+                    data_type=config.data_type
+                ))
+        return datasets
     except Exception as e:
         logger.error(f"Error listing datasets: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -128,10 +145,15 @@ async def list_datasets():
 async def get_dataset_config(dataset: str):
     """Get configuration for specific dataset"""
     try:
+        global config_loader
+        if config_loader is None:
+            config_loader = ConfigLoader()
         config = config_loader.get_dataset_config(dataset)
-        return DatasetConfig(**config)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=f"Dataset '{dataset}' not found")
+        if config is None:
+            raise HTTPException(status_code=404, detail=f"Dataset '{dataset}' not found")
+        return config  # config is already a DatasetConfig object
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting dataset config: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -144,6 +166,9 @@ async def get_dataset_config(dataset: str):
 async def extract_dataset(dataset: str, request: ExtractionRequest):
     """Extract NFL dataset"""
     try:
+        global nfl_extractor
+        if nfl_extractor is None:
+            nfl_extractor = NFLDataExtractor()
         data, metadata = nfl_extractor.extract_dataset(
             dataset_name=dataset,
             year=request.year,
@@ -313,23 +338,23 @@ async def get_system_status():
     return SystemStatus(
         overall_status="healthy",
         services={
-            "database": ServiceStatus(
-                status="online",
+            "database": ServiceStatusInfo(
+                status=ServiceStatus.ONLINE,
                 last_check="2025-07-22T15:30:45Z",
                 response_time_ms=15.3
             ),
-            "real_time_processor": ServiceStatus(
-                status="online", 
+            "real_time_processor": ServiceStatusInfo(
+                status=ServiceStatus.ONLINE, 
                 last_check="2025-07-22T15:30:45Z",
                 response_time_ms=8.7
             ),
-            "stream_processor": ServiceStatus(
-                status="online",
+            "stream_processor": ServiceStatusInfo(
+                status=ServiceStatus.ONLINE,
                 last_check="2025-07-22T15:30:45Z", 
                 response_time_ms=12.1
             ),
-            "ml_engine": ServiceStatus(
-                status="online",
+            "ml_engine": ServiceStatusInfo(
+                status=ServiceStatus.ONLINE,
                 last_check="2025-07-22T15:30:45Z",
                 response_time_ms=25.4
             )

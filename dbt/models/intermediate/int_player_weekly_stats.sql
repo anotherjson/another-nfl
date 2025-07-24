@@ -1,6 +1,6 @@
 {{ config(
     materialized='table',
-    description='Weekly player statistics with enhanced position-specific metrics and advanced analytics'
+    tags=['intermediate', 'player_statistics']
 ) }}
 
 with player_stats as (
@@ -187,8 +187,9 @@ select
     receiving_fumbles + rushing_fumbles + sack_fumbles as total_fumbles,
     receiving_fumbles_lost + rushing_fumbles_lost + sack_fumbles_lost as total_fumbles_lost,
     
-    -- Data quality
-    now() as dbt_loaded_at
+    -- Data quality with version tracking
+    CURRENT_TIMESTAMP as model_created_at,
+    '{{ run_started_at }}' as dbt_run_timestamp
     
 from season_rankings
 where player_id is not null

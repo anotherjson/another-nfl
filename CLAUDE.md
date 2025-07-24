@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NFL data extraction and analysis project building a modern data pipeline with Python. Extracts NFL data using `nfl_data_py` and creates a comprehensive data lake with transformation layers.
 
-**🎉 Status: Phase 5+ Complete - Production Ready**
+**🎉 Status: DuckLake Integration Complete - Production Ready**
 
-> **Latest (July 23, 2025):** Enhanced CLI tooling for dbt models, DuckLake integration, time travel queries, Dagster materialization. **94% test success rate**, **17/17 intermediate model tests passing**, **100% operational visualization stack**.
+> **Latest (July 24, 2025):** **MAJOR UPDATE** - Complete DuckLake integration implemented! Unified lakehouse architecture with PostgreSQL catalog, time travel queries, automatic data registration, and CLI model operations. **All 6/6 health checks passing**, **dbt compilation successful**, **CLI queries operational**.
 
 ## Technology Stack
 
@@ -20,7 +20,8 @@ NFL data extraction and analysis project building a modern data pipeline with Py
 - **Code Quality**: Ruff, pre-commit hooks, pytest (94% success rate)
 - **dbt Data Warehouse**: Staging + enhanced intermediate models
 - **Dagster Orchestration**: Pipeline orchestration with monitoring
-- **DuckLake**: Time travel, versioning, ACID transactions
+- **DuckLake Integration**: Complete lakehouse with PostgreSQL catalog, time travel, ACID transactions
+- **Data Registration**: Automatic catalog registration during extraction
 - **FastAPI**: REST API (9/15 endpoints operational)
 - **Visualization**: Streamlit dashboard + Evidence + Grafana
 - **CLI Model Operations**: dbt integration with time travel queries
@@ -41,7 +42,7 @@ uv run pre-commit install
 uv run python -m src.cli explore datasets
 uv run python -m src.cli explore data pbp --year 2023
 
-# Production data extraction
+# Production data extraction (with automatic DuckLake registration)
 uv run python -m src.cli extract dataset pbp --year 2023
 uv run python -m src.cli extract incremental weekly --max-age-days 7
 uv run python -m src.cli extract status
@@ -86,6 +87,9 @@ uv run streamlit run working_main.py --server.port 8504
 
 ### Testing & Validation
 ```bash
+# DuckLake integration health checks
+uv run python scripts/ducklake_health_check.py
+
 # Comprehensive testing
 uv run pytest --cov=src --cov-report=html
 uv run python scripts/test_phase3.py
@@ -94,13 +98,15 @@ uv run pytest tests/test_cli_models.py -v
 
 ## Data Pipeline Architecture
 
-### Layer Structure
-- **Raw Data**: Parquet files from `nfl_data_py` (19 datasets)
-- **Staging**: Light cleaning & normalization (4 models)
-- **Intermediate**: Enhanced analytics with EPA metrics (2 models)
+### DuckLake Lakehouse Architecture
+- **Raw Data**: Parquet files from `nfl_data_py` (19 datasets) → **Auto-registered in DuckLake catalog**
+- **Staging**: DuckLake-managed views with metadata tracking (4 models)
+  - `stg_pbp`, `stg_weekly`, `stg_team_desc`, `stg_schedules`
+- **Intermediate**: Enhanced analytics with version tracking (2 models)
   - `int_team_performance`: Team analytics, win rates, efficiency
   - `int_player_weekly_stats`: Player rankings, rolling averages, EPA
-- **Marts**: Analytics-ready models (future enhancement)
+- **Catalog**: PostgreSQL metadata store with **10 registered tables**
+- **Compute**: DuckDB engine with DuckLake extension for ACID operations
 
 ### Enhanced Intermediate Models
 **int_team_performance**: Advanced team performance metrics
@@ -205,6 +211,41 @@ data = ducklake.query_model("int_team_performance", limit=100)
 - API keys excluded from repository
 - Infrastructure secrets managed via Ansible vault
 
+## DuckLake Integration Details
+
+### Architecture Overview
+The project now implements a **unified DuckLake lakehouse architecture**:
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Data Sources  │    │   DuckLake       │    │   Analytics     │
+│                 │    │   Lakehouse      │    │   Layer         │
+│ nfl_data_py ────┼────┤                  ├────┤ dbt Models      │
+│ (19 datasets)   │    │ PostgreSQL       │    │ Streamlit       │
+│                 │    │ Catalog          │    │ FastAPI         │
+└─────────────────┘    │ DuckDB Compute   │    │ CLI Tools       │
+                       └──────────────────┘    └─────────────────┘
+```
+
+### Key Features Implemented
+- **✅ Automatic Registration**: Data extraction automatically registers tables in catalog
+- **✅ Time Travel**: Historical queries via `as_of_date` parameter
+- **✅ ACID Guarantees**: Consistent data operations through DuckLake
+- **✅ Version Tracking**: All models include creation timestamps and run IDs
+- **✅ CLI Integration**: Direct model queries via command line
+- **✅ Health Monitoring**: Comprehensive health check script
+
+### DuckLake Health Status
+```bash
+# Current status (all checks passing ✅)
+✅ PostgreSQL catalog connection successful
+✅ DuckLake extension installed and loaded successfully  
+✅ Found 10 tables registered in DuckLake catalog
+✅ Time travel check passed - found 1+ versions
+✅ dbt profiles.yml configured for DuckLake
+✅ CLI model queries working - found 4 models
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -217,13 +258,17 @@ uv run dbt compile --select tag:intermediate
 uv run dbt run --select tag:intermediate --debug
 ```
 
-**CLI Model Operations:**
+**DuckLake Integration Issues:**
 ```bash
-# Test DuckLake connection
-uv run python scripts/test_ducklake_integration.py
+# Run comprehensive health checks
+uv run python scripts/ducklake_health_check.py
 
-# Validate model availability
+# Test CLI model queries
 uv run python -m src.cli models list
+uv run python -m src.cli models query stg_team_desc --limit 5
+
+# Check catalog registration
+uv run python -c "from src.ducklake_manager import DuckLakeManager; print(DuckLakeManager().get_catalog_tables())"
 ```
 
 **Performance Issues:**
@@ -234,4 +279,5 @@ uv run python -m src.cli models list
 ---
 
 *For detailed model documentation, see `dbt/INTERMEDIATE_MODELS.md`*  
+*For DuckLake integration details, see `DUCKLAKE_INTEGRATION_FIX_PLAN.md`*  
 *For production deployment, see `PRODUCTION_DEPLOYMENT_GUIDE.md`*
