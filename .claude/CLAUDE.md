@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NFL data extraction and analysis project building a modern data pipeline with Python. Extracts NFL data using `nfl_data_py` and creates a comprehensive data lake with transformation layers.
 
-**🎉 Status: Production Ready - Complete Lakehouse Integration**
+**🎉 Status: Production Ready - Complete Dagster Integration**
 
-> **Latest (July 24, 2025):** Complete DuckLake lakehouse integration with unified catalog, time travel queries, and CLI model operations. **All 6/6 health checks passing**, **17/17 intermediate model tests passing**, **94% overall test success rate**.
+> **Latest (July 25, 2025):** Complete Dagster-managed dbt pipeline with unified orchestration. **All 19 NFL datasets** integrated as assets, **10 automated schedules**, **12 job definitions**, **17/17 intermediate model tests passing**.
 
 ## Technology Stack
 
@@ -19,7 +19,7 @@ NFL data extraction and analysis project building a modern data pipeline with Py
 - **Data Processing**: pandas, pyarrow, DuckDB
 - **Code Quality**: Ruff, pre-commit hooks, pytest (94% success rate)
 - **dbt Data Warehouse**: Staging + enhanced intermediate models
-- **Dagster Orchestration**: Pipeline orchestration with monitoring
+- **Dagster Orchestration**: Complete pipeline management with 19 dataset assets
 - **DuckLake Integration**: Complete lakehouse with PostgreSQL catalog, time travel, ACID transactions
 - **Data Registration**: Automatic catalog registration during extraction
 - **FastAPI**: REST API (9/15 endpoints operational)
@@ -36,13 +36,34 @@ uv sync --dev
 uv run pre-commit install
 ```
 
-### Data Exploration & Extraction
+### Dagster Pipeline Management (PRIMARY)
 ```bash
-# CLI data exploration
+# Start Dagster web interface
+uv run dagster dev -f nfl_dagster/definitions.py
+# Access: http://localhost:3000
+
+# Asset materialization by priority
+uv run dagster asset materialize --select nfl_critical_raw_data
+uv run dagster asset materialize --select dbt_critical_staging_models
+uv run dagster asset materialize --select dbt_intermediate_models
+
+# Job execution
+uv run dagster job execute --job nfl_full_critical_pipeline_job
+uv run dagster job execute --job nfl_seasonal_intensive_job
+
+# Schedule management
+uv run dagster schedule start daily_critical_data_extraction
+uv run dagster schedule start weekly_high_priority_extraction
+uv run dagster schedule list
+```
+
+### Legacy CLI Data Operations
+```bash
+# CLI data exploration (still available)
 uv run python -m src.cli explore datasets
 uv run python -m src.cli explore data pbp --year 2023
 
-# Production data extraction (with automatic DuckLake registration)
+# Manual data extraction (now wrapped by Dagster assets)
 uv run python -m src.cli extract dataset pbp --year 2023
 uv run python -m src.cli extract incremental weekly --max-age-days 7
 uv run python -m src.cli extract status
@@ -68,11 +89,17 @@ uv run python -m src.cli models catalog
 uv run python -m src.cli models sql "SELECT COUNT(*) FROM stg_team_desc"
 ```
 
-### Dagster Orchestration
+### dbt Integration (Dagster-Managed)
 ```bash
-# Pipeline orchestration
-uv run dagster dev -f nfl_dagster/definitions.py
-uv run dagster asset materialize --asset dbt_staging_models
+# dbt models are now managed through Dagster assets
+# Use Dagster commands above for model materialization
+
+# Direct dbt commands (for development/debugging)
+uv run dbt deps
+uv run dbt run --select tag:staging
+uv run dbt run --select tag:intermediate  # 17/17 tests passing
+uv run dbt test
+uv run dbt docs generate && uv run dbt docs serve
 ```
 
 ### API & Visualization
@@ -96,17 +123,20 @@ uv run python scripts/test_phase3.py
 uv run pytest tests/test_cli_models.py -v
 ```
 
-## Data Pipeline Architecture
+## Dagster-Managed Data Pipeline Architecture
 
-### DuckLake Lakehouse Architecture
-- **Raw Data**: Parquet files from `nfl_data_py` (19 datasets) → **Auto-registered in DuckLake catalog**
-- **Staging**: DuckLake-managed views with metadata tracking (4 models)
-  - `stg_pbp`, `stg_weekly`, `stg_team_desc`, `stg_schedules`
-- **Intermediate**: Enhanced analytics with version tracking (2 models)
+### Complete Asset Management
+- **Raw Data Assets**: 19 NFL datasets organized by priority as Dagster assets
+  - **Critical**: pbp, weekly, schedules, team_desc (daily processing)
+  - **High**: seasonal, players, rosters (weekly processing) 
+  - **Medium/Low**: qbr, injuries, advanced stats (as needed)
+- **Staging Assets**: dbt models wrapped as Dagster assets with dependencies
+  - 6+ staging models with unified `nfl_raw` source configuration
+- **Intermediate Assets**: Enhanced analytics models (17/17 tests passing)
   - `int_team_performance`: Team analytics, win rates, efficiency
   - `int_player_weekly_stats`: Player rankings, rolling averages, EPA
-- **Catalog**: PostgreSQL metadata store with **10 registered tables**
-- **Compute**: DuckDB engine with DuckLake extension for ACID operations
+- **Orchestration**: 10 automated schedules + 12 job definitions
+- **DuckLake Integration**: Automatic catalog registration with time travel
 
 ### Enhanced Intermediate Models
 **int_team_performance**: Advanced team performance metrics

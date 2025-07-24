@@ -9,12 +9,13 @@
 ## 📋 Core Documentation
 
 ### Development & Operations
-- **[.claude/CLAUDE.md](.claude/CLAUDE.md)** - Complete technical reference and development guide (Claude Code)
+- **[.claude/CLAUDE.md](.claude/CLAUDE.md)** - Complete Dagster-managed pipeline guide (Claude Code)
+- **[DAGSTER_DBT_REFACTOR_SUMMARY.md](DAGSTER_DBT_REFACTOR_SUMMARY.md)** - Complete refactor implementation (NEW)
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Problem-solving and debugging guide
 - **[OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)** - Production operations procedures
 
 ### Technical Specifications  
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Enterprise architecture and system design
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Updated enterprise architecture with Dagster integration
 - **[API_REFERENCE.md](API_REFERENCE.md)** - Comprehensive API documentation
 - **[REALTIME_GUIDE.md](REALTIME_GUIDE.md)** - Real-time processing implementation
 
@@ -67,20 +68,28 @@
 
 ---
 
-## 📝 Documentation Cleanup Summary
+## 📝 Documentation Updates Summary
 
-**Completed:** July 24, 2025
+**Latest Update:** July 25, 2025
 
-### Changes Made:
-- **Removed redundant files**: Consolidated 3 duplicate DuckLake documents into 1 main file
-- **Standardized formatting**: Consistent structure and status indicators across all docs  
-- **Updated version references**: Removed outdated "Phase X" terminology for production-ready status
-- **Consolidated information**: Merged overlapping content to reduce duplication
-- **Updated navigation**: Improved documentation index with clear hierarchy
+### Dagster Integration Documentation (NEW):
+- **Added `DAGSTER_DBT_REFACTOR_SUMMARY.md`**: Complete implementation guide for Dagster-managed pipeline
+- **Updated `README.md`**: New Dagster orchestration commands and workflow
+- **Updated `ARCHITECTURE.md`**: Complete pipeline flow with asset dependencies
+- **Updated `.claude/CLAUDE.md`**: Primary Dagster commands with legacy CLI reference
+- **Updated `QUICK_REFERENCE.md`**: Dagster-first workflow with essential commands
 
-### Removed Files:
-- `.claude/DUCKLAKE_INTEGRATION_COMPLETE.md` (consolidated into main DuckLake doc)
-- `.claude/DUCKLAKE_INTEGRATION_FIX_PLAN.md` (outdated implementation plan)
-- `FIXES_APPLIED.md` (historical information no longer needed)
+### Key Changes:
+- **New Architecture**: Complete Dagster management of all 19 NFL datasets
+- **Updated Commands**: Dagster-first approach with legacy CLI still available
+- **Production Focus**: 10 automated schedules + 12 job definitions documented
+- **Asset Management**: Priority-based processing (critical/high/medium/low)
+- **Comprehensive Coverage**: All documentation updated to reflect new pipeline
 
-*Documentation structure is now streamlined and production-ready.*
+### Implementation Status:
+- ✅ **Phase 6 Complete**: Full Dagster integration with unified orchestration
+- ✅ **All 19 NFL datasets** managed as Dagster assets
+- ✅ **Production schedules** with automated processing
+- ✅ **17/17 intermediate model tests** still passing
+
+*Documentation now reflects complete Dagster-managed architecture.*

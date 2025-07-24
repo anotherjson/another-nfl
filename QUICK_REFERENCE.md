@@ -2,7 +2,7 @@
 
 ## 🎯 System Status: Production Ready ✅
 
-Complete lakehouse architecture with DuckLake integration, advanced analytics models, and production visualization platform.
+Complete Dagster-managed dbt pipeline with 19 NFL datasets, automated orchestration, and production visualization platform. **Phase 6 Complete**.
 
 ## ⚡ Essential Commands
 
@@ -38,23 +38,33 @@ uv run python -m src.cli extract status pbp --verbose
 uv run python -m src.cli extract cleanup --max-age-days 30 --dry-run
 ```
 
-### Data Warehouse & Analytics
+### Dagster Pipeline Management - ✅ PRIMARY
 ```bash
-# dbt transformations - ✅ Working
+# Dagster web interface
+uv run dagster dev -f nfl_dagster/definitions.py   # Access: http://localhost:3000
+
+# Asset materialization by priority
+uv run dagster asset materialize --select nfl_critical_raw_data      # Daily datasets
+uv run dagster asset materialize --select dbt_critical_staging_models # Staging models
+uv run dagster asset materialize --select dbt_intermediate_models     # Analytics
+
+# Job execution (complete pipelines)
+uv run dagster job execute --job nfl_full_critical_pipeline_job
+uv run dagster job execute --job nfl_seasonal_intensive_job
+
+# Schedule management
+uv run dagster schedule start daily_critical_data_extraction
+uv run dagster schedule list
+```
+
+### Legacy dbt Commands - ✅ Available
+```bash
+# Direct dbt operations (for development/debugging)
 uv run dbt deps                       # Install dbt packages
-uv run dbt run --select tag:staging  # Run staging models (4 models working)
-uv run dbt run                        # Run all models
+uv run dbt run --select tag:staging  # Run staging models (6+ models)
+uv run dbt run --select tag:intermediate  # Run intermediate (17/17 tests passing)
 uv run dbt test                       # Run data quality tests
 uv run dbt docs generate && uv run dbt docs serve  # Documentation
-
-# Dagster orchestration - ✅ Working  
-uv run dagster dev -f nfl_dagster/definitions.py   # Start Dagster UI
-uv run dagster asset materialize --asset pbp_data         # Extract raw data
-uv run dagster asset materialize --asset dbt_staging_models  # Run staging models
-
-# Combined workflows - ✅ Working
-uv run dbt run --select tag:staging && uv run dbt test  # dbt staging pipeline
-uv run python scripts/test_phase3.py  # Complete system validation (100% success)
 ```
 
 ### Visualization Services - ✅ ACTIVE

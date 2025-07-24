@@ -9,7 +9,7 @@ Production-ready data platform for NFL analytics with enterprise-scale architect
 |-------|------------|---------|--------|
 | **CLI** | Click + Rich | Data operations & model management | ✅ Production |
 | **Data Warehouse** | dbt + DuckDB | Staging & intermediate models | ✅ Production |
-| **Orchestration** | Dagster | Pipeline scheduling & monitoring | ✅ Production |
+| **Orchestration** | Dagster (Full Management) | Complete pipeline orchestration | ✅ Production |
 | **Lakehouse** | DuckLake + PostgreSQL | Time travel & versioning | ✅ Production |
 | **API** | FastAPI + Pydantic | REST endpoints & documentation | ✅ 9/15 endpoints |
 | **Visualization** | Streamlit + Evidence + Grafana | Dashboards & monitoring | ✅ Production |
@@ -17,21 +17,26 @@ Production-ready data platform for NFL analytics with enterprise-scale architect
 
 ## Data Architecture
 
-### Pipeline Flow
+### Dagster-Managed Pipeline Flow
 ```
-NFL Data Sources → Extraction → Staging → Intermediate → Marts → Analytics
-     (19 datasets)      ↓          ↓           ↓          ↓         ↓
-    nfl_data_py    Parquet     dbt Models   Enhanced    Future   Dashboards
-                   Files       (4 models)   Analytics   Models      API
-                                           (2 models)
+NFL Data Sources → Dagster Raw Assets → DuckLake Registration → Dagster Staging Assets → Intermediate → Analytics
+     (19 datasets)          ↓                     ↓                      ↓                    ↓            ↓
+    nfl_data_py        Priority Groups        Catalog Tables        dbt Models           Enhanced      Dashboards
+                    (Critical/High/Med/Low)   Time Travel         as Assets           Analytics         API
+                                                                 (6+ models)        (2 models)
 ```
 
-### Data Layers
-1. **Raw Data**: Parquet files partitioned by year and ETL date
-2. **Staging**: 4 dbt models for cleaning and normalization
-3. **Intermediate**: 2 enhanced models with EPA analytics and advanced metrics
+### Dagster-Managed Data Layers
+1. **Raw Data Assets**: 19 NFL datasets organized by priority with automatic DuckLake registration
+   - **Critical**: pbp, weekly, schedules, team_desc (daily processing)
+   - **High**: seasonal, players, rosters (weekly processing)
+   - **Medium/Low**: qbr, injuries, advanced stats (as needed)
+2. **Staging Assets**: dbt models wrapped as Dagster assets with proper dependencies
+   - 6+ staging models with unified `nfl_raw` source configuration
+3. **Intermediate Assets**: Enhanced models with EPA analytics and advanced metrics
 4. **Marts**: Analytics-ready models (future development)
 5. **Serving**: API endpoints and visualization dashboards
+6. **Orchestration**: 10 automated schedules + 12 job definitions
 
 ### Enhanced Intermediate Models
 **int_team_performance**: Team efficiency analytics
@@ -48,35 +53,48 @@ NFL Data Sources → Extraction → Staging → Intermediate → Marts → Analy
 
 ## Technology Architecture
 
-### CLI Model Operations (NEW)
-Advanced CLI interface for dbt model management:
+### Dagster Orchestration Architecture (NEW)
+Complete pipeline management through Dagster:
 
 ```
-CLI Commands → DuckLakeManager → DuckDB/PostgreSQL → Rich Output
-     ↓               ↓                   ↓              ↓
-  Click Parser   Query Engine      Data Sources   Formatted Tables
-  Validation     Dagster Trigger   Time Travel    Progress Bars
-  Parameters     Schema Inspection Version Control Error Handling
+Dagster Web UI → Asset Management → Job Execution → Schedule Management
+     ↓                 ↓                ↓                  ↓
+  Asset Graph     Raw Data Assets   Staging Assets    Automated Schedules
+  Dependencies    DuckLake Reg.     dbt Integration   (10 schedules)
+  Monitoring      Error Handling    Test Execution    Job Definitions
+  Backfills       Priority Groups   Health Checks     (12 jobs)
 ```
 
 **Key Features**:
-- Direct dbt model querying with time travel
-- Dagster asset materialization triggers
-- Custom SQL execution against DuckLake
-- Interactive catalog browsing
-- Rich formatted output with progress tracking
+- **Complete Asset Management**: All 19 NFL datasets as Dagster assets
+- **Priority-Based Processing**: Critical (daily), High (weekly), Medium/Low (as needed)
+- **Automated Scheduling**: Production schedules with seasonal adjustments
+- **Comprehensive Monitoring**: Health checks, validation, and error handling
+- **Legacy CLI Integration**: Existing commands still available for manual operations
 
 ### Data Warehouse Architecture
-**dbt Project Structure**:
+**Dagster + dbt Integration Structure**:
 ```
+nfl_dagster/
+├── assets/
+│   ├── nfl_raw_data_assets.py     # Raw data extraction (19 datasets)
+│   ├── nfl_staging_assets.py      # dbt staging models as assets
+│   └── enhanced_dbt_assets.py     # Legacy enhanced assets
+├── jobs/
+│   └── nfl_pipeline_jobs.py       # 12 job definitions
+├── schedules/
+│   └── nfl_data_schedules.py      # 10 automated schedules
+└── definitions.py              # Complete Dagster definitions
+
 dbt/
 ├── models/
-│   ├── staging/           # 4 models (light cleaning)
-│   ├── intermediate/      # 2 models (EPA analytics)
-│   └── marts/            # Future (analytics-ready)
-├── macros/               # Reusable SQL functions
-├── tests/                # Data quality tests (17/17 passing)
-└── docs/                 # Auto-generated documentation
+│   ├── staging/                   # 6+ models (Dagster-managed)
+│   │   ├── _unified_nfl_sources.yml   # Unified source configuration
+│   │   ├── stg_pbp.sql               # Critical staging models
+│   │   ├── stg_weekly.sql
+│   │   └── stg_*.sql                 # All 19 datasets covered
+│   ├── intermediate/              # 2 models (EPA analytics)
+│   └── marts/                    # Future (analytics-ready)
 ```
 
 **DuckDB Integration**:

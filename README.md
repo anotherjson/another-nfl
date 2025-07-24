@@ -4,7 +4,7 @@ Production-grade data warehouse and analytics pipeline for NFL data processing. 
 
 **🎉 Status: Production Ready**
 
-> **Latest (July 24, 2025):** Complete DuckLake lakehouse integration with unified catalog. **94% test success rate**, **17/17 intermediate model tests passing**, **6/6 DuckLake health checks passing**.
+> **Latest (July 25, 2025):** Complete Dagster-managed dbt pipeline with unified orchestration. **All 19 NFL datasets** integrated, **10 automated schedules**, **12 job definitions**, **17/17 intermediate model tests passing**.
 
 ## ⚡ Quick Start
 
@@ -12,16 +12,18 @@ Production-grade data warehouse and analytics pipeline for NFL data processing. 
 # Setup environment
 uv python install 3.11 && uv sync --dev
 
-# Explore NFL datasets
-uv run python -m src.cli explore datasets
+# Start Dagster web interface
+uv run dagster dev -f nfl_dagster/definitions.py
+# Access: http://localhost:3000
 
-# Extract data
-uv run python -m src.cli extract dataset pbp --year 2023
+# Manual asset materialization
+uv run dagster asset materialize --select nfl_critical_raw_data
+uv run dagster asset materialize --select tag:staging
 
-# Run dbt transformations
-uv run dbt run --select tag:intermediate  # 17/17 tests passing
+# Run complete pipeline
+uv run dagster job execute --job nfl_full_critical_pipeline_job
 
-# Query enhanced models
+# Query models via CLI
 uv run python -m src.cli models query int_team_performance --limit 10
 
 # Start dashboard
@@ -31,13 +33,15 @@ uv run streamlit run working_main.py --server.port 8504
 
 ## 🏗️ Architecture
 
-### Data Pipeline
-- **Raw Data**: 19 NFL datasets from `nfl_data_py` → Parquet files
-- **Staging**: 4 dbt models for cleaning & normalization
-- **Intermediate**: 2 enhanced models with EPA analytics
-  - `int_team_performance`: Team efficiency, down conversion rates, win percentages
+### Dagster-Managed Data Pipeline
+- **Raw Data Assets**: 19 NFL datasets → Dagster assets → DuckLake registration
+  - 4 priority groups: critical (daily), high (weekly), medium/low (as needed)
+- **Staging Assets**: dbt models as Dagster assets with proper dependencies
+  - 6+ staging models with unified `nfl_raw` source configuration
+- **Intermediate Assets**: Enhanced analytics models with EPA metrics
+  - `int_team_performance`: Team efficiency, conversion rates, win percentages
   - `int_player_weekly_stats`: Position rankings, rolling averages, EPA metrics
-- **Marts**: Analytics-ready models (future)
+- **Orchestration**: 10 automated schedules + 12 job definitions
 
 ### Technology Stack
 | Component | Technology | Status |
@@ -45,7 +49,7 @@ uv run streamlit run working_main.py --server.port 8504
 | **Language** | Python 3.11 + uv | ✅ Production |
 | **CLI** | Click + Rich | ✅ Production |
 | **Data Warehouse** | dbt + DuckDB | ✅ Production |
-| **Orchestration** | Dagster | ✅ Production |
+| **Orchestration** | Dagster (Full Management) | ✅ Production |
 | **Lakehouse** | DuckLake + PostgreSQL | ✅ Production |
 | **API** | FastAPI | ✅ 9/15 endpoints |
 | **Visualization** | Streamlit + Evidence + Grafana | ✅ Production |
@@ -53,7 +57,26 @@ uv run streamlit run working_main.py --server.port 8504
 
 ## 🚀 Key Features
 
-### Enhanced CLI Model Operations (NEW)
+### Dagster Orchestration (NEW)
+```bash
+# Dagster web interface
+uv run dagster dev -f nfl_dagster/definitions.py
+
+# Asset materialization by priority
+uv run dagster asset materialize --select nfl_critical_raw_data
+uv run dagster asset materialize --select dbt_critical_staging_models
+uv run dagster asset materialize --select dbt_intermediate_models
+
+# Job execution
+uv run dagster job execute --job nfl_full_critical_pipeline_job
+uv run dagster job execute --job nfl_seasonal_intensive_job
+
+# Schedule management
+uv run dagster schedule start daily_critical_data_extraction
+uv run dagster schedule start weekly_high_priority_extraction
+```
+
+### Enhanced CLI Model Operations
 ```bash
 # List and query dbt models
 uv run python -m src.cli models list
@@ -66,9 +89,9 @@ uv run python -m src.cli models query stg_pbp --as-of-date 2025-01-01
 uv run python -m src.cli models sql "SELECT position, AVG(fantasy_points_ppr) FROM int_player_weekly_stats GROUP BY position"
 ```
 
-### Production Data Extraction
+### Legacy Data Extraction (CLI)
 ```bash
-# Single dataset
+# Single dataset (now wrapped by Dagster assets)
 uv run python -m src.cli extract dataset weekly --year 2023
 
 # Incremental processing
@@ -244,8 +267,10 @@ tables = ducklake.get_catalog_tables()
 
 ## 📚 Documentation
 
+- **`DAGSTER_DBT_REFACTOR_SUMMARY.md`**: Complete refactor implementation guide
 - **`.claude/CLAUDE.md`**: Development guide and commands for Claude Code
 - **`dbt/INTERMEDIATE_MODELS.md`**: Detailed model documentation
+- **`ARCHITECTURE.md`**: Updated enterprise architecture with Dagster integration
 - **`PRODUCTION_DEPLOYMENT_GUIDE.md`**: Enterprise deployment
 - **`DUCKLAKE_INTEGRATION.md`**: Time travel and versioning
 
@@ -269,17 +294,18 @@ ansible-playbook -i inventories/production/hosts.yml playbooks/deploy-nfl-platfo
 
 ## 🎯 Roadmap
 
-### Current Phase (5+ Complete)
-- ✅ Enhanced CLI model operations with DuckLake
-- ✅ Advanced intermediate models with EPA analytics
-- ✅ Production visualization stack
-- ✅ Time travel query capabilities
+### Latest Achievements (Phase 6 Complete)
+- ✅ **Complete Dagster Integration**: All 19 NFL datasets managed through Dagster
+- ✅ **Unified Orchestration**: 10 automated schedules + 12 job definitions
+- ✅ **Enhanced Pipeline Architecture**: Raw → Staging → Intermediate with proper dependencies
+- ✅ **Production Scheduling**: Priority-based processing (critical daily, high weekly)
+- ✅ **Comprehensive Monitoring**: Health checks and validation assets
 
 ### Future Enhancements
-- **Phase 6**: Machine learning models and predictions
-- **Phase 7**: Real-time data processing
-- **Phase 8**: Advanced web interface
-- **Phase 9**: Multi-cloud deployment
+- **Phase 7**: Machine learning models and predictions
+- **Phase 8**: Real-time data processing with streaming
+- **Phase 9**: Advanced web interface with React
+- **Phase 10**: Multi-cloud deployment and auto-scaling
 
 ---
 
