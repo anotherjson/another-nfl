@@ -10,7 +10,7 @@ data/
 # Temporary staging directory (not dbt staging models)
 /staging/
 
-# NFL pipeline artifacts  
+# NFL pipeline artifacts - DuckDB databases and data files
 *.duckdb
 *.duckdb.wal
 *.parquet
@@ -71,7 +71,6 @@ instance/
 .scrapy
 docs/_build/
 .pybuilder/
-target/
 .ipynb_checkpoints
 profile_default/
 ipython_config.py
@@ -115,11 +114,28 @@ dbt_packages/
 target/
 .dbt/
 
+# Evidence.js (data visualization framework)
+evidence/node_modules/
+evidence/.evidence/
+evidence/dist/
+evidence/.svelte-kit/
+
+# Streamlit (web app cache)
+.streamlit/
+
 # Database files
 *.db
 *.sqlite
 *.sqlite3
 *.db-journal
+
+# ============================================================================
+# CLAUDE CODE AI ASSISTANT
+# ============================================================================
+
+# Claude Code - exclude personal settings only
+.claude/settings.local.json
+CLAUDE.local.md
 
 # ============================================================================
 # CONFIGURATION & SECRETS
@@ -204,8 +220,6 @@ logs/
 tmp/
 temp/
 .tmp/
-raw_data/
-processed_data/
 
 # ============================================================================
 # OPERATING SYSTEM
@@ -273,8 +287,7 @@ tags
 **/.ssh/*_id_*
 **/.ssh/known_hosts
 
-# Jupyter Notebooks
-.ipynb_checkpoints
+# Jupyter Notebooks (already covered above)
 */.ipynb_checkpoints/*
 
 # ============================================================================
