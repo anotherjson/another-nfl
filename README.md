@@ -29,7 +29,7 @@ uv run python -m src.cli models query int_team_performance --limit 10
 # Start complete staging models explorer (all 19 NFL datasets)
 uv run streamlit run pure_staging_explorer.py --server.port 8504
 
-# Start enhanced dashboard (dbt staging models integration)
+# Start production dashboard (dbt staging models integration)
 cd visualizations/streamlit_app
 uv run streamlit run main_staging.py --server.port 8504
 ```
@@ -42,7 +42,7 @@ uv run streamlit run main_staging.py --server.port 8504
   - 🟡 **High Priority** (4): seasonal, players, weekly_rosters, seasonal_rosters  
   - 🟢 **Medium Priority** (5): injuries, depth_charts, snap_counts, qbr, ngs_data
   - 🟣 **Low Priority** (6): weekly_pfr, seasonal_pfr, ftn_data, officials, combine, draft_picks
-- **Advanced Analytics**: Enhanced dashboard with 5 specialized analytics tabs
+- **Advanced Analytics**: Production dashboard with 5 specialized analytics tabs
   - 🏥 Injury Analytics, 📊 Snap Count Analysis, 🎯 QB Performance
   - ⚡ Next Gen Stats, 👥 Roster Analysis
 - **Data Quality**: 149 comprehensive tests ensuring data integrity
