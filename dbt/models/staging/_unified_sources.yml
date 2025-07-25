@@ -1,0 +1,99 @@
+version: 2
+
+sources:
+  - name: nfl_raw
+    description: "Raw NFL data extracted from nfl_data_py and stored as partitioned Parquet files"
+    meta:
+      owner: "NFL Analytics Platform"
+      pipeline: "extraction -> staging -> intermediate -> marts"
+    
+    tables:
+      - name: pbp_raw
+        description: "Raw play-by-play data from NFL games"
+        external:
+          location: "data/pbp/*/etl_date=*/data.parquet"
+          file_format: parquet
+          auto_refresh: true
+        columns:
+          - name: game_id
+            description: "Unique identifier for the game"
+            tests:
+              - not_null
+          - name: play_id
+            description: "Unique identifier for the play within a game"
+            tests:
+              - not_null
+          - name: down
+            description: "Down number (1-4)"
+          - name: yards_gained
+            description: "Yards gained on the play"
+          - name: epa
+            description: "Expected Points Added"
+          - name: wp
+            description: "Win Probability"
+        
+      - name: weekly_raw
+        description: "Raw weekly player statistics"
+        external:
+          location: "data/weekly/*/etl_date=*/data.parquet"
+          file_format: parquet
+          auto_refresh: true
+        columns:
+          - name: player_id
+            description: "Unique identifier for the player"
+            tests:
+              - not_null
+          - name: season
+            description: "NFL season year"
+            tests:
+              - not_null
+          - name: week
+            description: "Week number"
+          - name: position
+            description: "Player position"
+          - name: team
+            description: "Player's team"
+            
+      - name: team_desc_raw
+        description: "Raw team description and metadata"
+        external:
+          location: "data/team_desc/etl_date=*/data.parquet"
+          file_format: parquet
+          auto_refresh: true
+        columns:
+          - name: team_abbr
+            description: "Team abbreviation"
+            tests:
+              - not_null
+              - unique
+          - name: team_name
+            description: "Full team name"
+            tests:
+              - not_null
+          - name: team_conference
+            description: "NFC or AFC"
+          - name: team_division
+            description: "Division within conference"
+            
+      - name: schedules_raw
+        description: "Raw NFL game schedule data"
+        external:
+          location: "data/schedules/*/etl_date=*/data.parquet"
+          file_format: parquet
+          auto_refresh: true
+        columns:
+          - name: game_id
+            description: "Unique identifier for the game"
+            tests:
+              - not_null
+              - unique
+          - name: season
+            description: "NFL season year"
+            tests:
+              - not_null
+          - name: week
+            description: "Week number"
+          - name: home_team
+            description: "Home team abbreviation"
+          - name: away_team
+            description: "Away team abbreviation"

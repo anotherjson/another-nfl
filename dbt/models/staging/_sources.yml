@@ -1,0 +1,30 @@
+version: 2
+
+sources:
+  - name: nfl_ducklake
+    description: "NFL data managed by DuckLake with time travel and versioning"
+    database: nfl_ducklake
+    tables:
+      - name: pbp_2023
+        description: "Play-by-play data for 2023 season"
+        meta:
+          ducklake_managed: true
+          time_travel_enabled: true
+          
+      - name: weekly_2023
+        description: "Weekly player statistics for 2023"
+        meta:
+          ducklake_managed: true
+          time_travel_enabled: true
+          
+      - name: team_desc
+        description: "Team descriptions and information"
+        meta:
+          ducklake_managed: true
+          time_travel_enabled: true
+          
+      - name: schedules_2023
+        description: "Game schedules for 2023"
+        meta:
+          ducklake_managed: true
+          time_travel_enabled: true

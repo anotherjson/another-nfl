@@ -1,0 +1,78 @@
+version: 2
+
+sources:
+  - name: ducklake_nfl_raw
+    description: "NFL raw data managed by DuckLake with versioning and time travel"
+    
+    tables:
+      - name: team_desc
+        description: "NFL team descriptions and information"
+        external:
+          location: "{{ var('ducklake_time_travel', 'SELECT * FROM \\'data/team_desc/etl_date=2025-07-21/data.parquet\\'') }}"
+        columns:
+          - name: team_abbr
+            description: "Team abbreviation (e.g., ARI, ATL)"
+          - name: team_name
+            description: "Full team name"
+          - name: team_id
+            description: "NFL team ID"
+          - name: team_nick
+            description: "Team nickname"
+          - name: team_conference
+            description: "Conference (AFC/NFC)"
+          - name: team_division
+            description: "Division name"
+          
+      - name: pbp_2023
+        description: "2023 NFL play-by-play data"
+        external:
+          location: "{{ var('ducklake_time_travel', 'SELECT * FROM \\'data/pbp/2023/etl_date=2025-07-21/data.parquet\\'') }}"
+        columns:
+          - name: play_id
+            description: "Unique play identifier"
+          - name: game_id
+            description: "Game identifier"
+          - name: home_team
+            description: "Home team abbreviation"
+          - name: away_team
+            description: "Away team abbreviation"
+          - name: play_type
+            description: "Type of play"
+          - name: yards_gained
+            description: "Yards gained on the play"
+            
+      - name: weekly_2023
+        description: "2023 NFL weekly player statistics"
+        external:
+          location: "{{ var('ducklake_time_travel', 'SELECT * FROM \\'data/weekly/2023/etl_date=2025-07-21/data.parquet\\'') }}"
+        columns:
+          - name: player_id
+            description: "Unique player identifier"
+          - name: player_name
+            description: "Player name"
+          - name: position
+            description: "Player position"
+          - name: team
+            description: "Team abbreviation"
+          - name: week
+            description: "NFL week number"
+          - name: season
+            description: "NFL season year"
+            
+      - name: schedules_2023
+        description: "2023 NFL game schedules"
+        external:
+          location: "{{ var('ducklake_time_travel', 'SELECT * FROM \\'data/schedules/2023/etl_date=2025-07-21/data.parquet\\'') }}"
+        columns:
+          - name: game_id
+            description: "Unique game identifier"
+          - name: season
+            description: "NFL season year"
+          - name: week
+            description: "NFL week number"
+          - name: gameday
+            description: "Game date"
+          - name: home_team
+            description: "Home team abbreviation"
+          - name: away_team
+            description: "Away team abbreviation"

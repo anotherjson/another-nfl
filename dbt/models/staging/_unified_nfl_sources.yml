@@ -1,0 +1,287 @@
+version: 2
+
+sources:
+  - name: nfl_raw
+    description: "Unified NFL raw data managed by Dagster with DuckLake integration"
+    meta:
+      owner: "NFL Analytics Platform"
+      pipeline: "dagster_extraction -> ducklake_registration -> dbt_staging -> intermediate -> marts"
+      managed_by: "dagster"
+      total_datasets: 19
+    
+    tables:
+      # Core Game Data (year-based partitioning)
+      - name: pbp
+        description: "Play-by-play data with EPA metrics and game events"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/pbp/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 1999
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "critical"
+        columns:
+          - name: game_id
+            description: "Unique identifier for the game"
+            tests:
+              - not_null
+          - name: play_id
+            description: "Unique identifier for the play within a game"
+            tests:
+              - not_null
+          - name: epa
+            description: "Expected Points Added for the play"
+          - name: wp
+            description: "Win Probability after the play"
+          - name: down
+            description: "Down number (1-4)"
+          - name: yards_gained
+            description: "Yards gained on the play"
+
+      - name: weekly
+        description: "Weekly player statistics for fantasy and performance analysis"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/weekly/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 1999
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "critical"
+        columns:
+          - name: player_id
+            description: "Unique identifier for the player"
+            tests:
+              - not_null
+          - name: season
+            description: "NFL season year"
+            tests:
+              - not_null
+          - name: week
+            description: "Week number"
+          - name: position
+            description: "Player position"
+          - name: team
+            description: "Player's team abbreviation"
+
+      - name: seasonal
+        description: "Seasonal player statistics aggregated by year"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/seasonal/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 1999
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "high"
+
+      - name: schedules
+        description: "NFL game schedules with results and metadata"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/schedules/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 1999
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "critical"
+        columns:
+          - name: game_id
+            description: "Unique identifier for the game"
+            tests:
+              - not_null
+              - unique
+          - name: season
+            description: "NFL season year"
+            tests:
+              - not_null
+          - name: week
+            description: "Week number"
+          - name: home_team
+            description: "Home team abbreviation"
+          - name: away_team
+            description: "Away team abbreviation"
+
+      # Roster Data (year-based)
+      - name: weekly_rosters
+        description: "Weekly team rosters and player assignments"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/weekly_rosters/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 1999
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "medium"
+
+      - name: seasonal_rosters
+        description: "Seasonal team rosters and depth charts"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/seasonal_rosters/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 1999
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "medium"
+
+      # Advanced Stats (year-based)
+      - name: qbr
+        description: "Weekly QBR data for quarterbacks"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/qbr/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 2006
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "medium"
+
+      - name: weekly_pfr
+        description: "Pro Football Reference weekly statistics"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/weekly_pfr/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 1932
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "low"
+
+      - name: seasonal_pfr
+        description: "Pro Football Reference seasonal statistics"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/seasonal_pfr/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 1932
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "low"
+
+      - name: injuries
+        description: "Player injury reports and status updates"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/injuries/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 2009
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "medium"
+
+      - name: depth_charts
+        description: "Team depth charts and player positions"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/depth_charts/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 2001
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "medium"
+
+      - name: snap_counts
+        description: "Player snap counts and participation rates"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/snap_counts/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 2012
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "medium"
+
+      - name: ftn_data
+        description: "Fantasy Points allowed data by position"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/ftn_data/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 2018
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "low"
+
+      - name: ngs_data
+        description: "Next Gen Stats data with advanced metrics"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/ngs_data/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 2016
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "medium"
+
+      - name: officials
+        description: "Game officials and crew assignments"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/officials/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 2001
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "low"
+
+      # Reference Data (static/single files)
+      - name: team_desc
+        description: "Team descriptions, conferences, and divisions"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/team_desc/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: null
+          requires_year: false
+          dataset_type: "static"
+          priority: "critical"
+        columns:
+          - name: team_abbr
+            description: "Team abbreviation (e.g., ARI, ATL)"
+            tests:
+              - not_null
+              - unique
+          - name: team_name
+            description: "Full team name"
+            tests:
+              - not_null
+          - name: team_conference
+            description: "Conference (AFC/NFC)"
+          - name: team_division
+            description: "Division name"
+
+      - name: players
+        description: "Player information and identifiers"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/players/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: null
+          requires_year: false
+          dataset_type: "static"
+          priority: "high"
+
+      # Historical Data (different year ranges)
+      - name: combine
+        description: "NFL Combine results and measurements"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/combine/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 1987
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "low"
+
+      - name: draft_picks
+        description: "NFL Draft picks and selections"
+        external:
+          location: "{{ var('nfl_data_path', 'data') }}/draft_picks/{{ var('year', '2023') }}/etl_date={{ var('etl_date', 'latest') }}/data.parquet"
+          file_format: parquet
+        meta:
+          start_year: 1936
+          requires_year: true
+          dataset_type: "yearly"
+          priority: "low"

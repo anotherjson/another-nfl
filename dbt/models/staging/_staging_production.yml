@@ -1,0 +1,140 @@
+version: 2
+
+models:
+  # Production staging models optimized for Streamlit and analytics  
+  - name: stg_pbp
+    description: "Play-by-play staging data optimized for visualization and analytics"
+    config:
+      tags: ['staging', 'streamlit_ready']
+    columns:
+      - name: game_id
+        description: "Unique game identifier"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_schedules')
+              field: game_id
+      - name: play_id
+        description: "Unique play identifier within game"
+        tests:
+          - not_null
+      - name: expected_points_added
+        description: "Expected Points Added for the play"
+      - name: play_outcome_category
+        description: "Streamlit-friendly play outcome categorization"
+      - name: down_display
+        description: "Human-readable down information"
+      - name: yardage_category
+        description: "Yardage gain categorization for charts"
+      - name: dbt_loaded_at
+        description: "When this record was processed by dbt"
+        tests:
+          - not_null
+      - name: source_etl_date
+        description: "ETL date from source extraction"
+
+  - name: stg_weekly
+    description: "Weekly player statistics optimized for fantasy and performance analysis"
+    config:
+      tags: ['staging', 'streamlit_ready']
+    columns:
+      - name: player_id
+        description: "Unique player identifier"
+        tests:
+          - not_null
+      - name: player_name
+        description: "Player display name"
+        tests:
+          - not_null
+      - name: position_group
+        description: "Simplified position grouping for visualization"
+      - name: fantasy_performance_tier
+        description: "Fantasy performance categorization"
+      - name: usage_tier
+        description: "Player usage level categorization"
+      - name: total_touchdowns
+        description: "All touchdowns (passing + rushing + receiving)"
+      - name: total_yards
+        description: "All yards (passing + rushing + receiving)"
+      - name: team
+        description: "Player's team"
+        tests:
+          - relationships:
+              to: ref('stg_team_desc')
+              field: team_abbr
+      - name: dbt_loaded_at
+        description: "When this record was processed by dbt"
+        tests:
+          - not_null
+
+  - name: stg_team_desc
+    description: "Team descriptions optimized for reference and visualization"
+    config:
+      tags: ['staging', 'streamlit_ready']
+    columns:
+      - name: team_abbr
+        description: "Team abbreviation (primary key)"
+        tests:
+          - not_null
+          - unique
+      - name: team_name
+        description: "Team name"
+        tests:
+          - not_null
+      - name: full_team_name
+        description: "City + team name for display"
+      - name: conference_full_name
+        description: "Full conference name"
+      - name: division_display
+        description: "Division with full name"
+      - name: chart_color_primary
+        description: "Primary color for charts (hex code)"
+      - name: display_logo
+        description: "Best available logo URL"
+      - name: conference_sort_order
+        description: "Numeric sort order for conferences"
+      - name: division_sort_order
+        description: "Numeric sort order for divisions"
+
+  - name: stg_schedules
+    description: "Game schedules optimized for game analysis and visualization"
+    config:
+      tags: ['staging', 'streamlit_ready']
+    columns:
+      - name: game_id
+        description: "Unique game identifier"
+        tests:
+          - not_null
+          - unique
+      - name: season
+        description: "NFL season year"
+        tests:
+          - not_null
+      - name: week
+        description: "Week number"
+      - name: home_team
+        description: "Home team abbreviation"
+        tests:
+          - relationships:
+              to: ref('stg_team_desc')
+              field: team_abbr
+      - name: away_team
+        description: "Away team abbreviation"
+        tests:
+          - relationships:
+              to: ref('stg_team_desc')
+              field: team_abbr
+      - name: winning_team
+        description: "Team that won the game"
+      - name: game_competitiveness
+        description: "Game competitiveness based on score differential"
+      - name: game_type_display
+        description: "Human-readable game type"
+      - name: season_phase
+        description: "Phase of season categorization"
+      - name: stadium_type_display
+        description: "Stadium type for visualization"
+      - name: temperature_category
+        description: "Temperature categorization for analysis"
+      - name: total_points
+        description: "Combined points scored by both teams"

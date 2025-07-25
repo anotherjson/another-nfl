@@ -1,0 +1,27 @@
+# _sources.yml - Define the sources for our staging models
+
+version: 2
+
+sources:
+  - name: nfl_raw_parquet
+    description: "Raw NFL data stored as Parquet files from extraction pipeline"
+    tables:
+      - name: pbp_parquet
+        description: "Play-by-play Parquet files"
+        meta:
+          external_location: "../data/pbp/*/etl_date=*/data.parquet"
+          
+      - name: weekly_parquet
+        description: "Weekly player statistics Parquet files"  
+        meta:
+          external_location: "../data/weekly/*/etl_date=*/data.parquet"
+          
+      - name: team_desc_parquet
+        description: "Team descriptions Parquet files"
+        meta:
+          external_location: "../data/team_desc/etl_date=*/data.parquet"
+          
+      - name: schedules_parquet  
+        description: "Game schedules Parquet files"
+        meta:
+          external_location: "../data/schedules/*/etl_date=*/data.parquet"
