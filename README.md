@@ -2,9 +2,9 @@
 
 Production-grade data warehouse and analytics pipeline for NFL data processing. Built with modern data engineering tools: **dbt**, **Dagster**, **DuckDB**, **DuckLake**, and **FastAPI**.
 
-**🎉 Status: Production Ready - Complete Staging Model Coverage**
+**🎉 Status: Production Ready - Functional Programming Architecture**
 
-> **Latest (December 23, 2024):** **100% NFL Dataset Coverage Achieved!** All 19 NFL datasets now have dedicated staging models with **149 comprehensive tests passing**. **Advanced Analytics Dashboard** with injury analysis, QB performance, Next Gen Stats, and roster management. **Complete Dagster orchestration** with priority-based processing and **enhanced visualization capabilities**.
+> **Latest (July 25, 2025):** **Complete Functional CLI Refactor!** Transformed from imperative to **pure functional programming** with immutable data structures, monadic error handling, and composable pipelines. **100% NFL Dataset Coverage** maintained with **149 comprehensive tests passing**. New streamlined CLI with **Extract → Process → Materialize → Query** workflow using functional programming principles.
 
 ## ⚡ Quick Start
 
@@ -12,26 +12,34 @@ Production-grade data warehouse and analytics pipeline for NFL data processing. 
 # Setup environment
 uv python install 3.11 && uv sync --dev
 
-# Start Dagster web interface
+# Functional CLI - Extract → Process → Materialize → Query workflow
+
+# 1. Extract NFL data
+uv run python -m src.cli extract all --year 2024 --priority critical
+uv run python -m src.cli extract status
+
+# 2. Process raw data
+uv run python -m src.cli process catalog
+uv run python -m src.cli process validate
+
+# 3. Materialize staging models
+uv run python -m src.cli materialize all --tests
+uv run python -m src.cli materialize status
+
+# 4. Query staging models
+uv run python -m src.cli query models
+uv run python -m src.cli query staging stg_pbp --limit 10
+uv run python -m src.cli query sql "SELECT team, COUNT(*) FROM stg_team_desc GROUP BY team"
+
+# System health check
+uv run python -m src.cli health
+
+# Alternative: Dagster web interface for orchestration
 uv run dagster dev -f nfl_dagster/definitions.py
 # Access: http://localhost:3000
 
-# Manual asset materialization
-uv run dagster asset materialize --select nfl_critical_raw_data
-uv run dagster asset materialize --select tag:staging
-
-# Run complete pipeline
-uv run dagster job execute --job nfl_full_critical_pipeline_job
-
-# Query models via CLI
-uv run python -m src.cli models query int_team_performance --limit 10
-
-# Start complete staging models explorer (all 19 NFL datasets)
+# Visualization dashboards
 uv run streamlit run pure_staging_explorer.py --server.port 8504
-
-# Start production dashboard (dbt staging models integration)
-cd visualizations/streamlit_app
-uv run streamlit run main_staging.py --server.port 8504
 ```
 
 ## 🏗️ Architecture
@@ -52,33 +60,59 @@ uv run streamlit run main_staging.py --server.port 8504
 | Component | Technology | Status |
 |-----------|------------|--------|
 | **Language** | Python 3.11 + uv | ✅ Production |
-| **CLI** | Click + Rich | ✅ Production |
+| **CLI Architecture** | **Functional Programming** (Pure Functions + Immutable Data) | ✅ **NEW** |
+| **CLI Interface** | Click + Rich + Monadic Error Handling | ✅ Production |
 | **Data Warehouse** | dbt + DuckDB | ✅ Production |
 | **Orchestration** | Dagster (Full Management) | ✅ Production |
 | **Lakehouse** | DuckLake + PostgreSQL | ✅ Production |
 | **API** | FastAPI | ✅ 9/15 endpoints |
 | **Visualization** | Streamlit (dbt Integration) + Evidence + Grafana | ✅ Production |
-| **Testing** | pytest | ✅ 94% success rate |
+| **Testing** | pytest + **Hypothesis** (Property-Based) | ✅ **Enhanced** |
+| **Functional Libraries** | toolz, returns, immutables, pyrsistent | ✅ **NEW** |
 
 ## 🚀 Key Features
 
-### Dagster Orchestration (NEW)
+### Functional CLI Architecture (NEW!)
+**Pure Functions + Immutable Data + Monadic Error Handling**
+
 ```bash
-# Dagster web interface
+# Extract: Pure data extraction with no side effects
+uv run python -m src.cli extract all --year 2024 --priority critical
+uv run python -m src.cli extract dataset pbp --year 2024 --validate
+uv run python -m src.cli extract cleanup --dry-run --max-age-days 30
+
+# Process: Immutable data processing and validation  
+uv run python -m src.cli process read data/pbp/2024/pbp_2024.parquet --limit 5
+uv run python -m src.cli process catalog --base-path data
+uv run python -m src.cli process validate --verbose
+
+# Materialize: Functional Dagster/dbt integration
+uv run python -m src.cli materialize staging --priority critical --tests
+uv run python -m src.cli materialize models stg_pbp stg_weekly
+uv run python -m src.cli materialize all
+
+# Query: Pure DuckLake querying with time travel
+uv run python -m src.cli query staging stg_pbp --limit 10
+uv run python -m src.cli query staging stg_weekly --as-of-date 2024-01-15
+uv run python -m src.cli query sql "SELECT * FROM stg_team_desc WHERE team_conf = 'NFC'"
+uv run python -m src.cli query schema stg_pbp
+
+# Health: System-wide health monitoring
+uv run python -m src.cli health
+```
+
+### Dagster Orchestration
+```bash
+# Dagster web interface for visual pipeline management
 uv run dagster dev -f nfl_dagster/definitions.py
 
-# Asset materialization by priority
+# Asset materialization by priority (also available via CLI)
 uv run dagster asset materialize --select nfl_critical_raw_data
 uv run dagster asset materialize --select dbt_critical_staging_models
-uv run dagster asset materialize --select dbt_intermediate_models
 
-# Job execution
+# Job execution and scheduling
 uv run dagster job execute --job nfl_full_critical_pipeline_job
-uv run dagster job execute --job nfl_seasonal_intensive_job
-
-# Schedule management
 uv run dagster schedule start daily_critical_data_extraction
-uv run dagster schedule start weekly_high_priority_extraction
 ```
 
 ### Enhanced Streamlit Dashboard (NEW)
@@ -96,29 +130,36 @@ uv run streamlit run main_staging.py --server.port 8504
 # - Team performance analysis with win rates and scoring
 ```
 
-### Enhanced CLI Model Operations
+### Functional Programming Benefits
+**Why Functional Architecture Matters:**
+
+- **🔒 Immutable Data**: No unexpected mutations, safer concurrent operations
+- **🧪 Pure Functions**: Easier testing, debugging, and reasoning about code
+- **🔄 Composable Pipelines**: Build complex workflows from simple, reusable functions  
+- **⚡ Error Handling**: Monadic `CLIResult[T]` with automatic error propagation
+- **📊 Property-Based Testing**: Hypothesis tests catch edge cases automatically
+- **🚀 Performance**: Pure functions enable memoization and parallelization
+
 ```bash
-# List and query dbt models
-uv run python -m src.cli models list
-uv run python -m src.cli models query int_player_weekly_stats --limit 20
-
-# Time travel queries
-uv run python -m src.cli models query stg_pbp --as-of-date 2025-01-01
-
-# Custom analytics
-uv run python -m src.cli models sql "SELECT position, AVG(fantasy_points_ppr) FROM int_player_weekly_stats GROUP BY position"
+# Example: Functional pipeline composition
+# Extract → Validate → Process → Materialize → Query (all pure functions)
+uv run python -m src.cli extract dataset pbp --year 2024 --validate
+uv run python -m src.cli process read data/pbp/2024/pbp_2024.parquet --validate  
+uv run python -m src.cli materialize staging --priority critical
+uv run python -m src.cli query staging stg_pbp --limit 10
 ```
 
-### Legacy Data Extraction (CLI)
+### Legacy CLI Commands (Preserved)
 ```bash
-# Single dataset (now wrapped by Dagster assets)
-uv run python -m src.cli extract dataset weekly --year 2023
+# Original CLI preserved as backup (src/cli_legacy.py)
+# New functional CLI provides cleaner, more reliable interface
 
-# Incremental processing
-uv run python -m src.cli extract incremental pbp --max-age-days 7
+# Old approach (imperative):
+# uv run python -m src.cli_legacy extract multiple seasonal --years 2021,2022,2023
 
-# Batch extraction
-uv run python -m src.cli extract multiple seasonal --years 2021,2022,2023
+# New approach (functional):
+uv run python -m src.cli extract all --year 2023 --priority high
+uv run python -m src.cli extract dataset seasonal --year 2021 --validate
 ```
 
 ### Advanced Analytics Models
@@ -189,58 +230,99 @@ uv run pre-commit install
 
 ### Development Workflow
 ```bash
-# Code quality
+# Functional CLI Development
+uv run python -m src.cli health  # Check system health
+
+# Code quality with functional standards
 uv run ruff format . && uv run ruff check .
 
-# Testing
+# Enhanced testing with property-based tests
 uv run pytest --cov=src --cov-report=html
-uv run dbt test --select tag:intermediate  # 17/17 passing
+uv run pytest tests/test_functional_utils.py -v        # Property-based tests
+uv run pytest tests/test_functional_integration.py -v  # Integration tests
+uv run dbt test --select tag:intermediate              # dbt model tests (17/17 passing)
 
-# dbt development
+# Functional CLI testing workflow
+uv run python -m src.cli extract status                # Test extraction
+uv run python -m src.cli process catalog              # Test processing  
+uv run python -m src.cli materialize status           # Test materialization
+uv run python -m src.cli query models                 # Test querying
+
+# dbt development (unchanged)
 uv run dbt run --select tag:staging
 uv run dbt run --select tag:intermediate
 uv run dbt docs generate && uv run dbt docs serve
 
-# Dagster development
+# Dagster development (integrated with functional CLI)
 uv run dagster dev -f nfl_dagster/definitions.py
 
-# Streamlit dashboard development
+# Dashboard development
 cd visualizations/streamlit_app
 uv run streamlit run main_staging.py --server.port 8504
 ```
 
 ### Project Structure
 ```
-├── src/                    # Core Python modules
-│   ├── cli.py             # Click-based CLI
-│   ├── nfl_extractor.py   # Production extraction
-│   ├── ducklake_manager.py # CLI model operations
-│   └── api/               # FastAPI server
-├── dbt/                   # dbt data warehouse
-│   ├── models/staging/    # 4 staging models
-│   ├── models/intermediate/ # 2 enhanced models
-│   └── INTERMEDIATE_MODELS.md # Detailed docs
-├── tests/                 # 94% test success rate
-├── visualizations/        # Enhanced Streamlit dashboards
-│   └── streamlit_app/     # dbt staging models integration
-│       ├── main_staging.py      # Production dashboard
-│       ├── data_models.py       # Type-safe data models
-│       ├── services/            # Business logic layer
-│       ├── utils/               # dbt & Dagster connectors
-│       ├── components/          # Health monitoring
-│       └── pages/               # Dashboard pages
-└── configs/               # YAML configurations
+├── src/                         # Core Python modules
+│   ├── cli.py                  # 🆕 Functional CLI (Pure Functions)
+│   ├── cli_legacy.py           # Original CLI (preserved as backup)
+│   ├── functional_utils.py     # 🆕 Functional programming utilities
+│   ├── functional_extraction.py # 🆕 Pure extraction functions
+│   ├── functional_processing.py # 🆕 Immutable data processing
+│   ├── functional_materialization.py # 🆕 Functional Dagster/dbt integration
+│   ├── functional_querying.py  # 🆕 Pure DuckLake querying
+│   ├── nfl_extractor.py        # Production extraction (legacy)
+│   ├── ducklake_manager.py     # DuckLake integration
+│   └── api/                    # FastAPI server
+├── tests/                      # Enhanced testing suite
+│   ├── test_functional_utils.py      # 🆕 Property-based tests
+│   ├── test_functional_integration.py # 🆕 Integration tests  
+│   └── test_*.py               # Legacy test files
+├── dbt/                        # dbt data warehouse
+│   ├── models/staging/         # 19 staging models (100% coverage)
+│   ├── models/intermediate/    # 2 enhanced models
+│   └── INTERMEDIATE_MODELS.md  # Detailed docs
+├── nfl_dagster/               # Pipeline orchestration
+├── visualizations/            # Enhanced dashboards
+│   ├── streamlit_app/         # dbt staging integration
+│   └── evidence/              # SQL-based reporting
+├── configs/                   # YAML configurations
+└── FUNCTIONAL_CLI_REFACTOR_SUMMARY.md # 🆕 Complete refactor documentation
 ```
 
 ## 📈 Advanced Usage
 
-### Time Travel Queries
-```bash
-# Query historical data
-uv run python -m src.cli models query int_team_performance --as-of-date 2024-12-01 --limit 5
+### Advanced Functional Operations
 
-# Compare model versions
-uv run python -m src.cli models versions nfl_raw.pbp
+#### Time Travel Queries (Pure Functions)
+```bash
+# Query historical data with time travel
+uv run python -m src.cli query staging stg_pbp --as-of-date 2024-12-01 --limit 5
+uv run python -m src.cli query staging stg_weekly --as-of-date 2024-01-15
+
+# Compare data over time (functional composition)
+uv run python -m src.cli query sql "SELECT COUNT(*) as current_rows FROM stg_pbp"
+uv run python -m src.cli query sql "SELECT COUNT(*) as historical_rows FROM stg_pbp AS OF '2024-01-01'"
+```
+
+#### Functional Pipeline Composition
+```bash
+# Chain operations functionally (each step is pure)
+uv run python -m src.cli extract dataset pbp --year 2024 --validate
+uv run python -m src.cli process read data/pbp/2024/pbp_2024.parquet --validate
+uv run python -m src.cli materialize staging --priority critical
+uv run python -m src.cli query staging stg_pbp --limit 10
+
+# Error handling with monadic composition (automatic error propagation)
+uv run python -m src.cli extract dataset invalid_dataset --year 2024  # Graceful error
+uv run python -m src.cli query staging nonexistent_model               # Graceful error
+```
+
+#### Property-Based Testing Examples
+```bash
+# Run property-based tests that generate test cases automatically
+uv run pytest tests/test_functional_utils.py::TestCLIResult::test_map_preserves_success -v
+uv run pytest tests/test_functional_utils.py::TestFunctionalUtilities::test_compose_function_composition -v
 ```
 
 ### Custom Analytics
@@ -310,13 +392,26 @@ tables = ducklake.get_catalog_tables()
 
 ## 📚 Documentation
 
-- **`DAGSTER_DBT_REFACTOR_SUMMARY.md`**: Complete refactor implementation guide
-- **`visualizations/streamlit_app/README_STAGING_INTEGRATION.md`**: Complete Streamlit dbt integration guide (NEW)
+### Core Documentation
+- **`FUNCTIONAL_CLI_REFACTOR_SUMMARY.md`**: 🆕 **Complete functional programming refactor guide**
+- **`README.md`**: This comprehensive usage guide with functional CLI examples
+- **`ARCHITECTURE.md`**: Enterprise architecture with functional programming integration
+- **`DAGSTER_DBT_REFACTOR_SUMMARY.md`**: Dagster and dbt integration details
+
+### Development Documentation  
 - **`.claude/CLAUDE.md`**: Development guide and commands for Claude Code
-- **`dbt/INTERMEDIATE_MODELS.md`**: Detailed model documentation
-- **`ARCHITECTURE.md`**: Updated enterprise architecture with Dagster integration
-- **`PRODUCTION_DEPLOYMENT_GUIDE.md`**: Enterprise deployment
-- **`DUCKLAKE_INTEGRATION.md`**: Time travel and versioning
+- **`dbt/INTERMEDIATE_MODELS.md`**: Detailed dbt model documentation
+- **`PRODUCTION_DEPLOYMENT_GUIDE.md`**: Enterprise deployment guide
+- **`DUCKLAKE_INTEGRATION.md`**: Time travel and versioning capabilities
+
+### Functional Programming Documentation
+- **`src/functional_utils.py`**: Core functional programming utilities and patterns
+- **`tests/test_functional_utils.py`**: Property-based testing examples
+- **`tests/test_functional_integration.py`**: Integration testing patterns
+
+### Visualization Documentation
+- **`visualizations/streamlit_app/README_STAGING_INTEGRATION.md`**: Streamlit dbt integration
+- **`COMPLETE_STAGING_MODELS_GUIDE.md`**: Complete staging model coverage guide
 
 ## 🚢 Production Deployment
 
@@ -338,21 +433,24 @@ ansible-playbook -i inventories/production/hosts.yml playbooks/deploy-nfl-platfo
 
 ## 🎯 Roadmap
 
-### Latest Achievements (Phase 6 Complete)
-- ✅ **Complete Dagster Integration**: All 19 NFL datasets managed through Dagster
-- ✅ **Unified Orchestration**: 10 automated schedules + 12 job definitions
-- ✅ **Enhanced Pipeline Architecture**: Raw → Staging → Intermediate with proper dependencies
-- ✅ **Production Scheduling**: Priority-based processing (critical daily, high weekly)
-- ✅ **Comprehensive Monitoring**: Health checks and validation assets
+### Latest Achievements (Phase 7 Complete - Functional Programming)
+- ✅ **Complete Functional CLI Refactor**: Pure functions + immutable data + monadic error handling
+- ✅ **Streamlined Architecture**: From 25 commands to 16 focused commands across 4 workflows
+- ✅ **Enhanced Testing**: Property-based testing with Hypothesis for comprehensive validation
+- ✅ **Improved Reliability**: Immutable data structures prevent mutation bugs
+- ✅ **Better Composability**: Functional pipelines enable easy composition and reuse
+- ✅ **Preserved Compatibility**: All existing Dagster/dbt/DuckLake integrations maintained
 
 ### Future Enhancements
-- **Phase 7**: Machine learning models and predictions
-- **Phase 8**: Real-time data processing with streaming
-- **Phase 9**: Advanced web interface with React
-- **Phase 10**: Multi-cloud deployment and auto-scaling
+- **Phase 8**: **Parallel Processing** - Leverage pure functions for concurrent execution
+- **Phase 9**: **Real-time Functional Streams** - Functional reactive programming for live data
+- **Phase 10**: **Advanced Composition** - Higher-order function combinators and DSLs
+- **Phase 11**: **Distributed Functional Computing** - Pure functions enable easy distribution
+- **Phase 12**: **Machine Learning Pipelines** - Functional ML with immutable model states
 
 ---
 
-**Developed with**: Python 3.11, dbt, Dagster, DuckDB, FastAPI, Streamlit  
+**Developed with**: Python 3.11 + **Functional Programming**, dbt, Dagster, DuckDB, FastAPI, Streamlit  
+**Architecture**: **Pure Functions + Immutable Data + Monadic Error Handling**  
 **License**: MIT  
-**Status**: Production Ready ✅
+**Status**: Production Ready ✅ **Enhanced with Functional Programming**
