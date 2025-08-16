@@ -116,29 +116,50 @@ def get_weekly_rosters(
     )
 
 
-def get_win_totals(
+def get_scoring_lines(
     years: list[int],
 ) -> Optional[pd.DataFrame]:
     """
-    Pulls from win totals data for years in a list.
-    Earliest year is unknown.
+    Pulls from scoring lines data for years in a list.
+    Earliest year is 2013.
     A year list too long will timeout.
 
     Args:
         years (list[int]): A list of years as YYYY int.
 
     Return:
-        Pandas dataframe of all columns in the weekly roster dataset
+        Pandas dataframe of all columns in the scoring lines dataset
         for years stated.
     """
     return _execute_call(
-        nfl.import_win_totals,
+        nfl.import_sc_lines,
+        years=years,
+    )
+
+
+def get_officials_data(
+    years: list[int],
+) -> Optional[pd.DataFrame]:
+    """
+    Pulls from officials data for years in a list.
+    Earliest year is .
+    A year list too long will timeout.
+
+    Args:
+        years (list[int]): A list of years as YYYY int.
+
+    Return:
+        Pandas dataframe of all columns in the officials dataset
+        for years stated.
+    """
+    return _execute_call(
+        nfl.import_officials,
         years=years,
     )
 
 
 def main():
-    print(get_seasonal_rosters(years=[2023]))
+    print(get_weekly_data(years=[]))
 
 
 if __name__ == "__main__":
